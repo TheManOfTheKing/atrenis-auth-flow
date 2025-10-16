@@ -609,7 +609,7 @@ const Index = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">Links</h4>
               <ul className="space-y-2">
-                <li><button onClick={() => scrollToSection("beneficios")} className="text-gray-400 hover:text-primary-yellow text-sm">Sobre</button></li>
+                <li><Link to="/about" className="text-gray-400 hover:text-primary-yellow text-sm">Sobre</Link></li> {/* Link para a página Sobre */}
                 <li><button onClick={() => scrollToSection("como-funciona")} className="text-gray-400 hover:text-primary-yellow text-sm">Funcionalidades</button></li>
                 <li><button onClick={() => scrollToSection("planos")} className="text-gray-400 hover:text-primary-yellow text-sm">Preços</button></li>
                 <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Blog</a></li> {/* Mantido como # para exemplo */}
