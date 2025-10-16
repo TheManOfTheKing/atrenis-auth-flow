@@ -1,11 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3, History } from "lucide-react"; // Adicionado History
-import { ThemeToggle } from "@/components/ui/ThemeToggle"; // Importar ThemeToggle
+import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3, History, Home } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb"; // Importar componentes de breadcrumb
+import { useBreadcrumbs } from "@/hooks/useBreadcrumbs"; // Importar o hook useBreadcrumbs
+import { useIsMobile } from "@/hooks/use-mobile"; // Importar o hook useIsMobile
+import React from "react"; // Importar React para React.Fragment
 
 type UserRole = "admin" | "personal" | "aluno";
 
@@ -18,6 +29,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile(); // Usar o hook de mobile
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -68,10 +80,25 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" },
     { icon: Users, label: "Alunos", path: "/admin/alunos" },
     { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" },
-  ] : userRole === "aluno" ? [ // Adicionado navegação para aluno
+  ] : userRole === "aluno" ? [
     { icon: LayoutDashboard, label: "Dashboard", path: "/aluno/dashboard" },
     { icon: History, label: "Histórico de Treinos", path: "/aluno/historico" },
   ] : [];
+
+  const breadcrumbs = useBreadcrumbs(userRole);
+
+  // Responsividade para breadcrumbs
+  const displayedBreadcrumbs = useMemo(() => {
+    if (isMobile && breadcrumbs.length > 2) {
+      // Se for mobile e houver mais de 2 itens, mostra "..." e os últimos 2
+      return [
+        { label: '...', path: '#', isCurrent: false }, // Item de placeholder
+        ...breadcrumbs.slice(-2)
+      ];
+    }
+    return breadcrumbs;
+  }, [breadcrumbs, isMobile]);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,7 +106,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <header className="sticky top-0 z-50 w-full border-b bg-card">
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            {(userRole === "personal" || userRole === "admin" || userRole === "aluno") && ( // Habilitar menu para aluno também
+            {(userRole === "personal" || userRole === "admin" || userRole === "aluno") && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -93,7 +120,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <ThemeToggle /> {/* Adicionado o ThemeToggle aqui */}
+            <ThemeToggle />
             <div className="hidden sm:flex items-center gap-3">
               <Avatar>
                 <AvatarFallback className="bg-primary text-primary-foreground">
@@ -110,7 +137,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       </header>
 
       <div className="flex">
-        {/* Sidebar - apenas para personal, admin e aluno */}
+        {/* Sidebar */}
         {(userRole === "personal" || userRole === "admin" || userRole === "aluno") && (
           <>
             {/* Mobile Sidebar */}
@@ -167,6 +194,39 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
         {/* Main Content */}
         <main className="flex-1 p-6">
+          {/* Breadcrumbs */}
+          {userRole && ( // Apenas mostra breadcrumbs se o papel do usuário for conhecido
+            <div className="mb-6">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {displayedBreadcrumbs.map((crumb, index) => (
+                    <React.Fragment key={crumb.path}>
+                      <BreadcrumbItem>
+                        {index === 0 && crumb.label === 'Home' ? (
+                          <BreadcrumbLink asChild>
+                            <NavLink to={crumb.path}>
+                              <Home className="h-4 w-4" />
+                            </NavLink>
+                          </BreadcrumbLink>
+                        ) : crumb.isCurrent ? (
+                          <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild>
+                            <NavLink to={crumb.path}>
+                              {crumb.label}
+                            </NavLink>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {!crumb.isCurrent && index < displayedBreadcrumbs.length - 1 && (
+                        <BreadcrumbSeparator />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          )}
           {children}
         </main>
       </div>
