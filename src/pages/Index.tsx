@@ -484,8 +484,8 @@ const Index = () => {
       {/* Testimonials Section */}
       <section id="depoimentos" className="py-20 bg-white px-4">
         <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-4">
-            O Que Nossos <span className="text-primary-yellow">Clientes</span> Dizem
+          <h2 className="text-4xl font-bold text-center mb-4 text-primary-dark"> {/* Alterado para text-primary-dark */}
+            O Que Nossos <span className="text-primary-dark">Clientes</span> Dizem {/* Alterado para text-primary-dark */}
           </h2>
           <p className="text-center text-gray-600 mb-12">
             Depoimentos reais de personal trainers que transformaram seus negócios
