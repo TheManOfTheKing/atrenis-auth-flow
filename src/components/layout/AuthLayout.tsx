@@ -60,13 +60,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   const navItems = userRole === "personal" ? [
     { icon: LayoutDashboard, label: "Dashboard", path: "/personal/dashboard" },
     { icon: Users, label: "Alunos", path: "/personal/alunos" },
-    { icon: Dumbbell, label: "Treinos", path: "/personal/treinos" }, // Adicionado link para Treinos
+    { icon: Dumbbell, label: "Treinos", path: "/personal/treinos" },
     { icon: ListChecks, label: "Exercícios", path: "/personal/exercicios" },
   ] : userRole === "admin" ? [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
-    { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" },
-    { icon: Users, label: "Alunos", path: "/admin/alunos" },
-    { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" },
+    { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" }, // Novo link
+    { icon: Users, label: "Alunos", path: "/admin/alunos" }, // Novo link
+    { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" }, // Manter ou ajustar conforme necessidade
   ] : [];
 
   return (

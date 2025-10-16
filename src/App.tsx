@@ -17,9 +17,11 @@ import NovoAluno from "./pages/personal/NovoAluno";
 import Exercicios from "./pages/personal/Exercicios";
 import NovoExercicio from "./pages/personal/NovoExercicio";
 import Treinos from "./pages/personal/Treinos";
-import NovoTreino from "./pages/personal/NovoTreino"; // Importar a nova página de Novo Treino
+import NovoTreino from "./pages/personal/NovoTreino";
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPersonalTrainers from "./pages/admin/PersonalTrainers"; // Importar nova página
+import AdminAlunos from "./pages/admin/Alunos"; // Importar nova página
 
 const queryClient = new QueryClient();
 
@@ -82,7 +84,7 @@ const App = () => (
           <Route path="/personal/treinos/new" element={
             <ProtectedRoute allowedRoles={['personal']}>
               <AuthLayout>
-                <NovoTreino /> {/* Nova rota para Criar Novo Treino */}
+                <NovoTreino />
               </AuthLayout>
             </ProtectedRoute>
           } />
@@ -101,6 +103,20 @@ const App = () => (
             <ProtectedRoute allowedRoles={['admin']}>
               <AuthLayout>
                 <AdminDashboard />
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/personal-trainers" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AuthLayout>
+                <AdminPersonalTrainers /> {/* Nova rota */}
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/alunos" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AuthLayout>
+                <AdminAlunos /> {/* Nova rota */}
               </AuthLayout>
             </ProtectedRoute>
           } />
