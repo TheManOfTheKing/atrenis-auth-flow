@@ -18,9 +18,10 @@ import Exercicios from "./pages/personal/Exercicios";
 import NovoExercicio from "./pages/personal/NovoExercicio";
 import Treinos from "./pages/personal/Treinos";
 import NovoTreino from "./pages/personal/NovoTreino";
+import AlunoHistorico from "./pages/personal/AlunoHistorico"; // Importar nova página de histórico do aluno (para personal)
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
-import ExecutarTreino from "./pages/aluno/ExecutarTreino"; // Importar nova página
-import HistoricoTreinos from "./pages/aluno/HistoricoTreinos"; // Importar nova página
+import ExecutarTreino from "./pages/aluno/ExecutarTreino";
+import HistoricoTreinos from "./pages/aluno/HistoricoTreinos";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPersonalTrainers from "./pages/admin/PersonalTrainers";
 import AdminAlunos from "./pages/admin/Alunos";
@@ -59,6 +60,13 @@ const App = () => (
             <ProtectedRoute allowedRoles={['personal']}>
               <AuthLayout>
                 <NovoAluno />
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personal/alunos/:alunoId/historico" element={
+            <ProtectedRoute allowedRoles={['personal']}>
+              <AuthLayout>
+                <AlunoHistorico /> {/* Nova rota para histórico de aluno (visão do personal) */}
               </AuthLayout>
             </ProtectedRoute>
           } />
@@ -102,14 +110,14 @@ const App = () => (
           <Route path="/aluno/treino/:alunoTreinoId" element={
             <ProtectedRoute allowedRoles={['aluno']}>
               <AuthLayout>
-                <ExecutarTreino /> {/* Nova rota para execução de treino */}
+                <ExecutarTreino />
               </AuthLayout>
             </ProtectedRoute>
           } />
           <Route path="/aluno/historico" element={
             <ProtectedRoute allowedRoles={['aluno']}>
               <AuthLayout>
-                <HistoricoTreinos /> {/* Nova rota para histórico de treinos */}
+                <HistoricoTreinos />
               </AuthLayout>
             </ProtectedRoute>
           } />
