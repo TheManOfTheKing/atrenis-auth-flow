@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3, History } from "lucide-react"; // Adicionado History
+import { ThemeToggle } from "@/components/ui/ThemeToggle"; // Importar ThemeToggle
 
 type UserRole = "admin" | "personal" | "aluno";
 
@@ -92,6 +93,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            <ThemeToggle /> {/* Adicionado o ThemeToggle aqui */}
             <div className="hidden sm:flex items-center gap-3">
               <Avatar>
                 <AvatarFallback className="bg-primary text-primary-foreground">

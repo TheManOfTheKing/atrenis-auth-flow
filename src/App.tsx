@@ -6,6 +6,8 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools"; // Importar
 import { persistQueryClient } from '@tanstack/react-query-persist-client'; // Importar para persistência
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'; // Importar para persistência
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes"; // Importar ThemeProvider
+
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -63,128 +65,134 @@ persistQueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/recuperar-senha" element={<RecuperarSenha />} />
-          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-          
-          {/* Personal Routes */}
-          <Route path="/personal/dashboard" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <PersonalDashboard />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/alunos" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <Alunos />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/alunos/new" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <NovoAluno />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/alunos/:alunoId/historico" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <AlunoHistorico />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/exercicios" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <Exercicios />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/exercicios/new" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <NovoExercicio />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/treinos" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <Treinos />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/personal/treinos/new" element={
-            <ProtectedRoute allowedRoles={['personal']}>
-              <AuthLayout>
-                <NovoTreino />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+    >
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+            
+            {/* Personal Routes */}
+            <Route path="/personal/dashboard" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <PersonalDashboard />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/alunos" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <Alunos />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/alunos/new" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <NovoAluno />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/alunos/:alunoId/historico" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <AlunoHistorico />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/exercicios" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <Exercicios />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/exercicios/new" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <NovoExercicio />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/treinos" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <Treinos />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/personal/treinos/new" element={
+              <ProtectedRoute allowedRoles={['personal']}>
+                <AuthLayout>
+                  <NovoTreino />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
 
-          {/* Aluno Routes */}
-          <Route path="/aluno/dashboard" element={
-            <ProtectedRoute allowedRoles={['aluno']}>
-              <AuthLayout>
-                <AlunoDashboard />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/aluno/treino/:alunoTreinoId" element={
-            <ProtectedRoute allowedRoles={['aluno']}>
-              <AuthLayout>
-                <ExecutarTreino />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/aluno/historico" element={
-            <ProtectedRoute allowedRoles={['aluno']}>
-              <AuthLayout>
-                <HistoricoTreinos />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
+            {/* Aluno Routes */}
+            <Route path="/aluno/dashboard" element={
+              <ProtectedRoute allowedRoles={['aluno']}>
+                <AuthLayout>
+                  <AlunoDashboard />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/aluno/treino/:alunoTreinoId" element={
+              <ProtectedRoute allowedRoles={['aluno']}>
+                <AuthLayout>
+                  <ExecutarTreino />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/aluno/historico" element={
+              <ProtectedRoute allowedRoles={['aluno']}>
+                <AuthLayout>
+                  <HistoricoTreinos />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
 
-          {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AuthLayout>
-                <AdminDashboard />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/personal-trainers" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AuthLayout>
-                <AdminPersonalTrainers />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/alunos" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AuthLayout>
-                <AdminAlunos />
-              </AuthLayout>
-            </ProtectedRoute>
-          } />
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AuthLayout>
+                  <AdminDashboard />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/personal-trainers" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AuthLayout>
+                  <AdminPersonalTrainers />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/alunos" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AuthLayout>
+                  <AdminAlunos />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-    {/* React Query DevTools - apenas em desenvolvimento */}
-    {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+      {/* React Query DevTools - apenas em desenvolvimento */}
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
