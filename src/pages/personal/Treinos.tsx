@@ -173,7 +173,7 @@ export default function Treinos() {
           <h1 className="text-3xl font-bold">Meus Treinos</h1>
           <p className="text-muted-foreground">Gerencie seus modelos de treino e atribuições</p>
         </div>
-        <Link to="/personal/treinos/new"> {/* Rota para criar novo treino (a ser criada) */}
+        <Link to="/personal/treinos/new"> {/* Rota para criar novo treino */}
           <Button className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90">
             <PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Treino
           </Button>

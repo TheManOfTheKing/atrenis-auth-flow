@@ -16,7 +16,8 @@ import Alunos from "./pages/personal/Alunos";
 import NovoAluno from "./pages/personal/NovoAluno";
 import Exercicios from "./pages/personal/Exercicios";
 import NovoExercicio from "./pages/personal/NovoExercicio";
-import Treinos from "./pages/personal/Treinos"; // Importar a nova página de Treinos
+import Treinos from "./pages/personal/Treinos";
+import NovoTreino from "./pages/personal/NovoTreino"; // Importar a nova página de Novo Treino
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -74,7 +75,14 @@ const App = () => (
           <Route path="/personal/treinos" element={
             <ProtectedRoute allowedRoles={['personal']}>
               <AuthLayout>
-                <Treinos /> {/* Nova rota para Treinos */}
+                <Treinos />
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personal/treinos/new" element={
+            <ProtectedRoute allowedRoles={['personal']}>
+              <AuthLayout>
+                <NovoTreino /> {/* Nova rota para Criar Novo Treino */}
               </AuthLayout>
             </ProtectedRoute>
           } />
