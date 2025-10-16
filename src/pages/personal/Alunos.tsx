@@ -224,7 +224,41 @@ export default function Alunos() {
   };
 
   if (error) {
-    return <div className="text-destructive text-center p-8">Erro ao carregar alunos: {error.message}</div>;
+    console.error("Erro detalhado ao carregar alunos:", {
+      error,
+      personalId,
+      searchTerm: debouncedSearchTerm,
+      sortOrder,
+      currentPage
+    });
+    
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-destructive text-xl font-semibold">
+          Erro ao carregar alunos
+        </div>
+        <div className="text-muted-foreground text-center max-w-md">
+          {error.message || "Ocorreu um erro desconhecido"}
+        </div>
+        <Button 
+          onClick={() => window.location.reload()}
+          className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90"
+        >
+          Tentar Novamente
+        </Button>
+      </div>
+    );
+  }
+
+  // Adicionar tratamento para quando não há personalId
+  if (!personalId) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-muted-foreground text-lg">
+          Carregando informações do usuário...
+        </div>
+      </div>
+    );
   }
 
   return (
