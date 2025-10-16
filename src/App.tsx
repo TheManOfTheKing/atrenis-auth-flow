@@ -13,7 +13,8 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/layout/AuthLayout";
 import PersonalDashboard from "./pages/personal/PersonalDashboard";
 import Alunos from "./pages/personal/Alunos";
-import NovoAluno from "./pages/personal/NovoAluno"; // Importar a nova página de Novo Aluno
+import NovoAluno from "./pages/personal/NovoAluno";
+import Exercicios from "./pages/personal/Exercicios"; // Importar a nova página de Exercícios
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -50,7 +51,14 @@ const App = () => (
           <Route path="/personal/alunos/new" element={
             <ProtectedRoute allowedRoles={['personal']}>
               <AuthLayout>
-                <NovoAluno /> {/* Nova rota para Cadastrar Novo Aluno */}
+                <NovoAluno />
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personal/exercicios" element={
+            <ProtectedRoute allowedRoles={['personal']}>
+              <AuthLayout>
+                <Exercicios /> {/* Nova rota para Exercícios */}
               </AuthLayout>
             </ProtectedRoute>
           } />
