@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom"; // Importar useSearchParams
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,14 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox"; // Importar Checkbox
-import { Label } from "@/components/ui/label"; // Importar Label para o Checkbox
-import { Loader2 } from "lucide-react"; // Importar Loader2 para o spinner
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Loader2, ShieldAlert } from "lucide-react"; // Importar ShieldAlert para o Alert
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Importar Alert
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  rememberMe: z.boolean().default(true), // Adicionar campo para 'Lembrar-me'
+  rememberMe: z.boolean().default(true),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -24,15 +25,26 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams(); // Hook para gerenciar query params
+  const sessionExpired = searchParams.get("expired") === "true";
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: true, // Padrão para manter conectado
+      rememberMe: true,
     },
   });
+
+  // Limpar o query param 'expired' após a renderização inicial
+  useEffect(() => {
+    if (sessionExpired) {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("expired");
+      setSearchParams(newSearchParams, { replace: true }); // Substitui a entrada no histórico
+    }
+  }, [sessionExpired, searchParams, setSearchParams]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -41,7 +53,7 @@ export default function Login() {
         email: data.email,
         password: data.password,
         options: {
-          shouldRemember: data.rememberMe, // Usar a preferência do usuário
+          shouldRemember: data.rememberMe,
         },
       });
 
@@ -75,7 +87,6 @@ export default function Login() {
               </>
             ),
           });
-          // Opcional: deslogar o usuário se o perfil não puder ser carregado
           await supabase.auth.signOut();
           return;
         }
@@ -85,7 +96,6 @@ export default function Login() {
           description: `Bem-vindo(a) ao Atrenis, ${profile.nome.split(' ')[0]}!`,
         });
 
-        // Redirecionar baseado na role
         if (profile.role === "admin") {
           navigate("/admin/dashboard");
         } else if (profile.role === "personal") {
@@ -113,6 +123,15 @@ export default function Login() {
           <CardDescription>Entre na sua conta Atrenis</CardDescription>
         </CardHeader>
         <CardContent>
+          {sessionExpired && (
+            <Alert variant="destructive" className="mb-4">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Sessão Expirada</AlertTitle>
+              <AlertDescription>
+                Sua sessão expirou por inatividade. Por favor, faça login novamente.
+              </AlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
