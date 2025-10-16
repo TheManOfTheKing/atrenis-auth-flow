@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import * as z from "zod"; // Manter import para z.infer
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -11,20 +11,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { exercicioSchema } from "@/lib/validations"; // Importar o schema centralizado
 
 const MUSCLE_GROUPS = [
   "Peito", "Costas", "Ombros", "Bíceps", "Tríceps", "Pernas",
   "Glúteos", "Abdômen", "Cardio", "Funcional", "Outro"
 ];
-
-const exercicioSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  descricao: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
-  grupo_muscular: z.enum(MUSCLE_GROUPS as [string, ...string[]], {
-    errorMap: () => ({ message: "Selecione um grupo muscular" }),
-  }),
-  video_url: z.string().url("URL inválida").optional().or(z.literal(''))
-});
 
 type ExercicioFormData = z.infer<typeof exercicioSchema>;
 
@@ -71,7 +63,7 @@ export default function NovoExercicio() {
         .from('exercicios')
         .insert({
           nome: data.nome,
-          descricao: data.descricao,
+          descricao: data.descricao || null,
           grupo_muscular: data.grupo_muscular,
           video_url: data.video_url || null,
           criado_por_personal_id: personalId, // Marca como customizado pelo personal

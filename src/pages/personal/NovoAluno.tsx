@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import * as z from "zod"; // Manter import para z.infer
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CalendarIcon, Clipboard, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale"; // Importar locale para formatação de data
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import InputMask from "react-input-mask"; // Importar InputMask
-import { useCreateAluno } from "@/hooks/useCreateAluno"; // Importar o novo hook
+import InputMask from "react-input-mask";
+import { useCreateAluno } from "@/hooks/useCreateAluno";
+import { alunoSchema } from "@/lib/validations"; // Importar o schema centralizado
 
 const calculateAge = (dateString: string): number => {
   const birthDate = new Date(dateString);
@@ -31,37 +32,6 @@ const calculateAge = (dateString: string): number => {
   }
   return age;
 };
-
-const alunoSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido").refine(async (email) => {
-    // Validação assíncrona para verificar se o email já existe
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-    return !data; // Retorna true se o email NÃO existir
-  }, {
-    message: "Este email já está cadastrado.",
-    path: ["email"],
-  }),
-  telefone: z.string().refine(val => {
-    // Remove caracteres não numéricos para validação
-    const cleaned = val.replace(/\D/g, '');
-    // Valida formato de telefone brasileiro (10 ou 11 dígitos)
-    return /^\d{10,11}$/.test(cleaned);
-  }, "Telefone inválido. Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX"),
-  data_nascimento: z.string().refine(date => {
-    if (!date) return false; // Data de nascimento é obrigatória
-    const age = calculateAge(date);
-    return age >= 12 && age <= 120;
-  }, "Idade deve estar entre 12 e 120 anos"),
-  objetivo: z.enum(['emagrecimento', 'hipertrofia', 'condicionamento', 'reabilitacao', 'outro'], {
-    errorMap: () => ({ message: "Selecione um objetivo" }),
-  }),
-  observacoes: z.string().optional(),
-});
 
 type AlunoFormData = z.infer<typeof alunoSchema>;
 
@@ -259,9 +229,9 @@ export default function NovoAluno() {
                           }
                           initialFocus
                           locale={ptBR}
-                          captionLayout="dropdown" // Adicionado para permitir seleção de ano e mês
-                          fromYear={1900} // Define o ano inicial para o dropdown
-                          toYear={new Date().getFullYear()} // Define o ano final para o dropdown
+                          captionLayout="dropdown"
+                          fromYear={1900}
+                          toYear={new Date().getFullYear()}
                         />
                       </PopoverContent>
                     </Popover>

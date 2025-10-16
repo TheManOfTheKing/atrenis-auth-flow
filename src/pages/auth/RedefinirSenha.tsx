@@ -2,30 +2,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import * as z from "zod"; // Manter import para z.infer
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { redefinirSenhaSchema } from "@/lib/validations"; // Importar o schema centralizado
 
-const redefinirSchema = z.object({
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
-type RedefinirFormData = z.infer<typeof redefinirSchema>;
+type RedefinirFormData = z.infer<typeof redefinirSenhaSchema>;
 
 export default function RedefinirSenha() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RedefinirFormData>({
-    resolver: zodResolver(redefinirSchema),
+    resolver: zodResolver(redefinirSenhaSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",

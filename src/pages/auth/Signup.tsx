@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Importar Alert
-import { Progress } from "@/components/ui/progress"; // Importar Progress
-import { Badge } from "@/components/ui/badge"; // Importar Badge
-import { CheckCircle, Info, Loader2 } from "lucide-react"; // Importar ícones adicionais
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, Info, Loader2 } from "lucide-react";
+import { passwordSchema, validateUniqueEmail } from "@/lib/validations"; // Importar schemas e helpers
 
 // Função para calcular a força da senha
 const calculatePasswordStrength = (password: string) => {
@@ -43,23 +44,11 @@ const calculatePasswordStrength = (password: string) => {
 
 const signupSchema = z.object({
   nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
-  email: z.string().email("Email inválido").refine(async (email) => {
-    // Validação assíncrona para verificar se o email já existe
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-    return !data; // Retorna true se o email NÃO existir
-  }, {
+  email: z.string().email("Email inválido").toLowerCase().refine(validateUniqueEmail, {
     message: "Este email já está cadastrado.",
     path: ["email"],
   }),
-  password: z.string()
-    .min(8, "Senha deve ter no mínimo 8 caracteres")
-    .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
-    .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
-    .regex(/\d/, "Senha deve conter pelo menos um número"),
+  password: passwordSchema, // Usar o schema de senha centralizado
   confirmPassword: z.string(),
   cref: z.string().optional().refine((cref) => {
     if (!cref) return true; // Campo opcional, se vazio, é válido
@@ -68,8 +57,8 @@ const signupSchema = z.object({
   }, {
     message: "Formato do CREF inválido (ex: CREF 123456-G/SP)",
     path: ["cref"],
-  }),
-  telefone: z.string().optional(),
+  }).or(z.literal('')), // Permite string vazia para opcional
+  telefone: z.string().optional().or(z.literal('')), // Permite string vazia para opcional
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],

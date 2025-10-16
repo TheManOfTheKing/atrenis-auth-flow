@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import * as z from "zod"; // Manter import para z.infer
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -13,19 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dumbbell, ListChecks, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { treinoInfoSchema } from "@/lib/validations"; // Importar o schema centralizado para info básica
 
 const WORKOUT_TYPES = [
   "A", "B", "C", "D", "E", "F", "Cardio", "Funcional", "Personalizado", "Outro"
 ];
-
-const treinoInfoSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  tipo: z.enum(WORKOUT_TYPES as [string, ...string[]], {
-    errorMap: () => ({ message: "Selecione um tipo de treino" }),
-  }),
-  duracao_estimada_min: z.coerce.number().min(5, "Duração mínima de 5 minutos").max(180, "Duração máxima de 180 minutos"),
-  descricao: z.string().optional(),
-});
 
 type TreinoInfoFormData = z.infer<typeof treinoInfoSchema>;
 
@@ -42,7 +34,7 @@ export default function NovoTreino() {
   const [treinoEmCriacao, setTreinoEmCriacao] = useState<TreinoEmCriacaoState>({
     step1: {
       nome: "",
-      tipo: undefined as any, // Zod enum expects undefined for initial empty state
+      tipo: "", // Alterado para string vazia para corresponder ao enum do Zod
       duracao_estimada_min: 60,
       descricao: "",
     },

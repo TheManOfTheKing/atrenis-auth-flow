@@ -2,26 +2,23 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import * as z from "zod"; // Manter import para z.infer
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { recuperarSenhaSchema } from "@/lib/validations"; // Importar o schema centralizado
 
-const recuperarSchema = z.object({
-  email: z.string().email("Email inválido"),
-});
-
-type RecuperarFormData = z.infer<typeof recuperarSchema>;
+type RecuperarFormData = z.infer<typeof recuperarSenhaSchema>;
 
 export default function RecuperarSenha() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
   const form = useForm<RecuperarFormData>({
-    resolver: zodResolver(recuperarSchema),
+    resolver: zodResolver(recuperarSenhaSchema),
     defaultValues: {
       email: "",
     },
