@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3, History, Home } from "lucide-react";
+import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3, History, Home, DollarSign } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import {
   Breadcrumb,
@@ -70,20 +70,30 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       .slice(0, 2);
   };
 
-  const navItems = userRole === "personal" ? [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/personal/dashboard" },
-    { icon: Users, label: "Alunos", path: "/personal/alunos" },
-    { icon: Dumbbell, label: "Treinos", path: "/personal/treinos" },
-    { icon: ListChecks, label: "Exercícios", path: "/personal/exercicios" },
-  ] : userRole === "admin" ? [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
-    { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" },
-    { icon: Users, label: "Alunos", path: "/admin/alunos" },
-    { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" },
-  ] : userRole === "aluno" ? [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/aluno/dashboard" },
-    { icon: History, label: "Histórico de Treinos", path: "/aluno/historico" },
-  ] : [];
+  const navItems = useMemo(() => {
+    if (userRole === "personal") {
+      return [
+        { icon: LayoutDashboard, label: "Dashboard", path: "/personal/dashboard" },
+        { icon: Users, label: "Alunos", path: "/personal/alunos" },
+        { icon: Dumbbell, label: "Treinos", path: "/personal/treinos" },
+        { icon: ListChecks, label: "Exercícios", path: "/personal/exercicios" },
+      ];
+    } else if (userRole === "admin") {
+      return [
+        { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
+        { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" },
+        { icon: Users, label: "Alunos", path: "/admin/alunos" },
+        { icon: DollarSign, label: "Planos", path: "/admin/planos" }, // Novo item
+        { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" },
+      ];
+    } else if (userRole === "aluno") {
+      return [
+        { icon: LayoutDashboard, label: "Dashboard", path: "/aluno/dashboard" },
+        { icon: History, label: "Histórico de Treinos", path: "/aluno/historico" },
+      ];
+    }
+    return [];
+  }, [userRole]);
 
   const breadcrumbs = useBreadcrumbs(userRole);
 

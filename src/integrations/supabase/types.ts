@@ -219,6 +219,45 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          id: string
+          max_alunos: number | null
+          nome: string
+          preco_anual: number | null
+          preco_mensal: number
+          recursos: Json | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          max_alunos?: number | null
+          nome: string
+          preco_anual?: number | null
+          preco_mensal: number
+          recursos?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          max_alunos?: number | null
+          nome?: string
+          preco_anual?: number | null
+          preco_mensal?: number
+          recursos?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

@@ -130,3 +130,35 @@ export const redefinirSenhaSchema = z.object({
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
 });
+
+// Schema para planos de assinatura
+export const planSchema = z.object({
+  id: z.string().uuid().optional(), // Para edição
+  nome: z.string()
+    .min(3, 'Nome deve ter no mínimo 3 caracteres')
+    .max(100, 'Nome muito longo'),
+  descricao: z.string()
+    .max(500, 'Descrição muito longa')
+    .optional()
+    .or(z.literal('')),
+  preco_mensal: z.coerce.number()
+    .positive('Preço mensal deve ser maior que zero'),
+  preco_anual: z.coerce.number()
+    .positive('Preço anual deve ser maior que zero')
+    .optional()
+    .or(z.literal(0)) // Permite 0 para indicar que não há preço anual
+    .transform(e => e === 0 ? undefined : e), // Transforma 0 de volta para undefined
+  max_alunos: z.coerce.number()
+    .int('Limite de alunos deve ser um número inteiro')
+    .min(0, 'Limite de alunos não pode ser negativo'),
+  recursos: z.array(z.string().min(1, 'Recurso não pode ser vazio')).optional(),
+  ativo: z.boolean().default(true),
+}).refine((data) => {
+  if (data.preco_anual !== undefined && data.preco_anual > 0 && data.preco_mensal * 12 < data.preco_anual) {
+    return false; // Preço anual não pode ser maior que 12x o mensal
+  }
+  return true;
+}, {
+  message: "Preço anual não pode ser maior que 12x o preço mensal",
+  path: ["preco_anual"],
+});
