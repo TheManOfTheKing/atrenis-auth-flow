@@ -14,7 +14,8 @@ import AuthLayout from "./components/layout/AuthLayout";
 import PersonalDashboard from "./pages/personal/PersonalDashboard";
 import Alunos from "./pages/personal/Alunos";
 import NovoAluno from "./pages/personal/NovoAluno";
-import Exercicios from "./pages/personal/Exercicios"; // Importar a nova página de Exercícios
+import Exercicios from "./pages/personal/Exercicios";
+import NovoExercicio from "./pages/personal/NovoExercicio"; // Importar a nova página de Novo Exercício
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -58,7 +59,14 @@ const App = () => (
           <Route path="/personal/exercicios" element={
             <ProtectedRoute allowedRoles={['personal']}>
               <AuthLayout>
-                <Exercicios /> {/* Nova rota para Exercícios */}
+                <Exercicios />
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personal/exercicios/new" element={
+            <ProtectedRoute allowedRoles={['personal']}>
+              <AuthLayout>
+                <NovoExercicio /> {/* Nova rota para Criar Novo Exercício */}
               </AuthLayout>
             </ProtectedRoute>
           } />
