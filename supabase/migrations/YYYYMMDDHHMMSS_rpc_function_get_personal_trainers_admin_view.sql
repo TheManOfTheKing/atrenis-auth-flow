@@ -21,9 +21,10 @@ RETURNS TABLE(
     status_assinatura subscription_status,
     total_alunos BIGINT,
     created_at TIMESTAMP WITH TIME ZONE,
-    ativo BOOLEAN, -- Adicionado o campo ativo
-    data_desativacao TIMESTAMP WITH TIME ZONE, -- Adicionado o campo data_desativacao
-    motivo_desativacao TEXT, -- Adicionado o campo motivo_desativacao
+    ativo BOOLEAN,
+    data_desativacao TIMESTAMP WITH TIME ZONE,
+    motivo_desativacao TEXT,
+    plano_vitalicio BOOLEAN, -- Adicionado o campo plano_vitalicio
     total_count BIGINT
 )
 LANGUAGE plpgsql
@@ -46,7 +47,7 @@ BEGIN
     END IF;
 
     -- Add plan filter
-    IF plan_filter IS NOT NULL THEN
+    IF plan_filter IS NOT NULL AND plan_filter != 'none' THEN
         where_clause := where_clause || FORMAT(' AND p.plan_id = %L', plan_filter);
     END IF;
     
@@ -92,6 +93,7 @@ BEGIN
             p.ativo,
             p.data_desativacao,
             p.motivo_desativacao,
+            p.plano_vitalicio,
             %s AS total_count
         FROM
             public.profiles p

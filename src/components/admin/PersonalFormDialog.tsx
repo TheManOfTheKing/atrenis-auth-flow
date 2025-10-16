@@ -267,7 +267,7 @@ export default function PersonalFormDialog({ isOpen, onClose, personal }: Person
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Período</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoading || !selectedPlanId}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoading || !selectedPlanId || currentPlan?.tipo === 'vitalicio'}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o período" />
@@ -275,9 +275,16 @@ export default function PersonalFormDialog({ isOpen, onClose, personal }: Person
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">Não Atribuir</SelectItem>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        {currentPlan?.preco_anual && currentPlan.preco_anual > 0 && (
-                          <SelectItem value="anual">Anual</SelectItem>
+                        {currentPlan?.tipo !== 'vitalicio' && (
+                          <>
+                            <SelectItem value="mensal">Mensal</SelectItem>
+                            {currentPlan?.preco_anual && currentPlan.preco_anual > 0 && (
+                              <SelectItem value="anual">Anual</SelectItem>
+                            )}
+                          </>
+                        )}
+                        {currentPlan?.tipo === 'vitalicio' && (
+                          <SelectItem value="vitalicio">Vitalício</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -287,7 +294,7 @@ export default function PersonalFormDialog({ isOpen, onClose, personal }: Person
               />
             </div>
 
-            {selectedPlanId && selectedPeriodo !== 'none' && (
+            {selectedPlanId && selectedPeriodo !== 'none' && currentPlan?.tipo !== 'vitalicio' && (
               <FormField
                 control={form.control}
                 name="desconto_percentual"
@@ -317,10 +324,12 @@ export default function PersonalFormDialog({ isOpen, onClose, personal }: Person
                   <span className="font-medium">Valor Original ({selectedPeriodo === 'mensal' ? 'mês' : 'ano'}):</span>
                   <span>R$ {valorOriginal.toFixed(2)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">Desconto Aplicado:</span>
-                  <span>{selectedDesconto || 0}%</span>
-                </div>
+                {currentPlan?.tipo !== 'vitalicio' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Desconto Aplicado:</span>
+                    <span>{selectedDesconto || 0}%</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-lg font-bold text-primary-yellow">
                   <span>Valor Final:</span>
                   <span>R$ {valorFinal.toFixed(2)}</span>

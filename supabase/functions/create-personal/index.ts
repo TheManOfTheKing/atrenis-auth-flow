@@ -89,29 +89,35 @@ serve(async (req) => {
     let dataAssinatura = null;
     let dataVencimento = null;
     let statusAssinatura = 'pendente';
+    let planoVitalicio = false;
 
-    if (plan_id && periodo) {
+    if (plan_id && periodo && periodo !== 'none') {
       const { data: planData, error: planError } = await supabaseAdmin
         .from('plans')
-        .select('preco_mensal, preco_anual, max_alunos')
+        .select('preco_mensal, preco_anual, max_alunos, tipo')
         .eq('id', plan_id)
         .single();
 
       if (planError || !planData) {
-        // Log error but proceed with user creation, plan can be assigned later
         console.error("Error fetching plan data for new personal:", planError?.message);
       } else {
         dataAssinatura = new Date().toISOString();
-        if (periodo === 'mensal') {
+        if (planData.tipo === 'vitalicio') {
+          planoVitalicio = true;
+          statusAssinatura = 'vitalicia';
+          // Para planos vitalícios, data_vencimento pode ser null ou uma data muito distante
+          dataVencimento = null; // Ou new Date(9999, 11, 31).toISOString();
+        } else if (periodo === 'mensal') {
           const nextMonth = new Date();
           nextMonth.setMonth(nextMonth.getMonth() + 1);
           dataVencimento = nextMonth.toISOString();
+          statusAssinatura = 'ativa';
         } else if (periodo === 'anual') {
           const nextYear = new Date();
           nextYear.setFullYear(nextYear.getFullYear() + 1);
           dataVencimento = nextYear.toISOString();
+          statusAssinatura = 'ativa';
         }
-        statusAssinatura = 'ativa'; // Mark as active if plan is assigned
       }
     }
 
@@ -129,6 +135,7 @@ serve(async (req) => {
         data_assinatura: dataAssinatura,
         data_vencimento: dataVencimento,
         status_assinatura: statusAssinatura,
+        plano_vitalicio: planoVitalicio,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })

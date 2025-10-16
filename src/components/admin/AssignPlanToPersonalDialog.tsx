@@ -51,7 +51,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
         personalId: personal.id,
         planId: personal.plan_id || "",
         desconto_percentual: personal.desconto_percentual || 0,
-        periodo: "mensal", // Reset to default, or try to infer from existing plan
+        periodo: personal.plano_vitalicio ? 'vitalicio' : (personal.status_assinatura === 'ativa' && personal.data_assinatura && personal.data_vencimento && (new Date(personal.data_vencimento).getMonth() !== new Date(personal.data_assinatura).getMonth() + 1)) ? 'anual' : 'mensal',
       });
     }
   }, [personal, form, isOpen]);
@@ -65,7 +65,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
   }, [availablePlans, selectedPlanId]);
 
   const valorOriginal = useMemo(() => {
-    if (!selectedPlan) return 0;
+    if (!selectedPlan || periodo === 'none' || periodo === 'vitalicio') return 0;
     return periodo === 'mensal' ? selectedPlan.preco_mensal : (selectedPlan.preco_anual || selectedPlan.preco_mensal * 12);
   }, [selectedPlan, periodo]);
 
@@ -76,7 +76,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
   }, [valorOriginal, descontoPercentual]);
 
   const dataVencimentoEstimada = useMemo(() => {
-    if (!periodo) return null;
+    if (!periodo || periodo === 'none' || periodo === 'vitalicio') return null;
     const now = new Date();
     if (periodo === 'mensal') {
       return format(new Date(now.setMonth(now.getMonth() + 1)), "PPP", { locale: ptBR });
@@ -142,6 +142,8 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
                         ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                         ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                         ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
+                        ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
+                        ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
                       `}
                     >
                       {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
@@ -188,16 +190,24 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Período de Assinatura</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isLoading || !selectedPlan}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isLoading || !selectedPlanId}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o período" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="mensal">Mensal</SelectItem>
-                      {selectedPlan?.preco_anual && selectedPlan.preco_anual > 0 && (
-                        <SelectItem value="anual">Anual</SelectItem>
+                      <SelectItem value="none">Não Atribuir</SelectItem>
+                      {selectedPlan?.tipo !== 'vitalicio' && (
+                        <>
+                          <SelectItem value="mensal">Mensal</SelectItem>
+                          {selectedPlan?.preco_anual && selectedPlan.preco_anual > 0 && (
+                            <SelectItem value="anual">Anual</SelectItem>
+                          )}
+                        </>
+                      )}
+                      {selectedPlan?.tipo === 'vitalicio' && (
+                        <SelectItem value="vitalicio">Vitalício</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -206,59 +216,65 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="desconto_percentual"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Desconto Percentual (%)</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        min="0"
-                        max="100"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                        disabled={isLoading}
-                      />
-                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {selectedPlanId && periodo !== 'none' && selectedPlan?.tipo !== 'vitalicio' && (
+              <FormField
+                control={form.control}
+                name="desconto_percentual"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Desconto Percentual (%)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          max="100"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          disabled={isLoading}
+                        />
+                        <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            <div className="space-y-2 mt-4 p-3 border rounded-md bg-muted/50">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">Valor Original ({periodo === 'mensal' ? 'mês' : 'ano'}):</span>
-                <span>R$ {valorOriginal.toFixed(2)}</span>
+            {selectedPlanId && periodo !== 'none' && (
+              <div className="space-y-2 mt-4 p-3 border rounded-md bg-muted/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Valor Original ({periodo === 'mensal' ? 'mês' : 'ano'}):</span>
+                  <span>R$ {valorOriginal.toFixed(2)}</span>
+                </div>
+                {selectedPlan?.tipo !== 'vitalicio' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Desconto Aplicado:</span>
+                    <span>{descontoPercentual || 0}%</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-lg font-bold text-primary-yellow">
+                  <span>Valor Final:</span>
+                  <span>R$ {valorFinal.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1"><CalendarDays className="h-4 w-4" /> Vencimento Estimado:</span>
+                  <span>{dataVencimentoEstimada || 'N/A'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1"><Users className="h-4 w-4" /> Limite de Alunos:</span>
+                  <span>{selectedPlan?.max_alunos === 0 ? 'Ilimitado' : selectedPlan?.max_alunos || 'N/A'}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">Desconto Aplicado:</span>
-                <span>{descontoPercentual || 0}%</span>
-              </div>
-              <div className="flex items-center justify-between text-lg font-bold text-primary-yellow">
-                <span>Valor Final:</span>
-                <span>R$ {valorFinal.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><CalendarDays className="h-4 w-4" /> Vencimento Estimado:</span>
-                <span>{dataVencimentoEstimada || 'N/A'}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> Limite de Alunos:</span>
-                <span>{selectedPlan?.max_alunos === 0 ? 'Ilimitado' : selectedPlan?.max_alunos || 'N/A'}</span>
-              </div>
-            </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading || !selectedPlanId}>
+              <Button type="submit" disabled={isLoading || !selectedPlanId || periodo === 'none'}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Atribuindo...

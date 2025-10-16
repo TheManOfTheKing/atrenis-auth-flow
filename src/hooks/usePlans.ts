@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { Tables, TablesInsert, TablesUpdate, Enums } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 
 type Plan = Tables<'plans'>;
@@ -9,7 +9,8 @@ type PlanUpdate = TablesUpdate<'plans'>;
 
 interface PlansFilter {
   ativo?: boolean | null;
-  sortBy?: 'nome_asc' | 'nome_desc' | 'preco_mensal_asc' | 'preco_mensal_desc' | 'created_at_asc' | 'created_at_desc';
+  visivel_landing?: boolean | null; // Novo filtro
+  sortBy?: 'nome_asc' | 'nome_desc' | 'preco_mensal_asc' | 'preco_mensal_desc' | 'created_at_asc' | 'created_at_desc' | 'ordem_exibicao_asc'; // Novo sort option
 }
 
 export function usePlans(filters?: PlansFilter) {
@@ -22,6 +23,9 @@ export function usePlans(filters?: PlansFilter) {
 
       if (filters?.ativo !== undefined && filters.ativo !== null) {
         query = query.eq('ativo', filters.ativo);
+      }
+      if (filters?.visivel_landing !== undefined && filters.visivel_landing !== null) {
+        query = query.eq('visivel_landing', filters.visivel_landing);
       }
 
       switch (filters?.sortBy) {
@@ -42,6 +46,9 @@ export function usePlans(filters?: PlansFilter) {
           break;
         case 'created_at_desc':
           query = query.order('created_at', { ascending: false });
+          break;
+        case 'ordem_exibicao_asc': // Novo sort option
+          query = query.order('ordem_exibicao', { ascending: true });
           break;
         default:
           query = query.order('nome', { ascending: true });

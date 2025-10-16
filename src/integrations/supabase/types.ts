@@ -269,10 +269,13 @@ export type Database = {
           id: string
           max_alunos: number | null
           nome: string
+          ordem_exibicao: number | null
           preco_anual: number | null
           preco_mensal: number
           recursos: Json | null
+          tipo: Database["public"]["Enums"]["plan_type"] | null
           updated_at: string
+          visivel_landing: boolean | null
         }
         Insert: {
           ativo?: boolean | null
@@ -281,10 +284,13 @@ export type Database = {
           id?: string
           max_alunos?: number | null
           nome: string
+          ordem_exibicao?: number | null
           preco_anual?: number | null
           preco_mensal: number
           recursos?: Json | null
+          tipo?: Database["public"]["Enums"]["plan_type"] | null
           updated_at?: string
+          visivel_landing?: boolean | null
         }
         Update: {
           ativo?: boolean | null
@@ -293,10 +299,13 @@ export type Database = {
           id?: string
           max_alunos?: number | null
           nome?: string
+          ordem_exibicao?: number | null
           preco_anual?: number | null
           preco_mensal?: number
           recursos?: Json | null
+          tipo?: Database["public"]["Enums"]["plan_type"] | null
           updated_at?: string
+          visivel_landing?: boolean | null
         }
         Relationships: []
       }
@@ -319,6 +328,7 @@ export type Database = {
           observacoes_aluno: string | null
           personal_id: string | null
           plan_id: string | null
+          plano_vitalicio: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           status_assinatura:
             | Database["public"]["Enums"]["subscription_status"]
@@ -348,6 +358,7 @@ export type Database = {
           observacoes_aluno?: string | null
           personal_id?: string | null
           plan_id?: string | null
+          plano_vitalicio?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           status_assinatura?:
             | Database["public"]["Enums"]["subscription_status"]
@@ -377,6 +388,7 @@ export type Database = {
           observacoes_aluno?: string | null
           personal_id?: string | null
           plan_id?: string | null
+          plano_vitalicio?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           status_assinatura?:
             | Database["public"]["Enums"]["subscription_status"]
@@ -628,13 +640,16 @@ export type Database = {
           status_filter?: Database["public"]["Enums"]["subscription_status"]
         }
         Returns: {
+          ativo: boolean
           created_at: string
           cref: string
           data_assinatura: string
+          data_desativacao: string
           data_vencimento: string
           desconto_percentual: number
           email: string
           id: string
+          motivo_desativacao: string
           nome: string
           plan_id: string
           plan_max_alunos: number
@@ -742,12 +757,14 @@ export type Database = {
       agendamento_tipo: "treino" | "avaliacao" | "consulta"
       aluno_treino_status: "ativo" | "concluido" | "cancelado"
       comentario_tipo: "feedback" | "duvida" | "orientacao"
+      plan_type: "publico" | "vitalicio"
       subscription_status:
         | "ativa"
         | "cancelada"
         | "vencida"
         | "trial"
         | "pendente"
+        | "vitalicia"
       user_role: "admin" | "personal" | "aluno"
     }
     CompositeTypes: {
@@ -880,12 +897,14 @@ export const Constants = {
       agendamento_tipo: ["treino", "avaliacao", "consulta"],
       aluno_treino_status: ["ativo", "concluido", "cancelado"],
       comentario_tipo: ["feedback", "duvida", "orientacao"],
+      plan_type: ["publico", "vitalicio"],
       subscription_status: [
         "ativa",
         "cancelada",
         "vencida",
         "trial",
         "pendente",
+        "vitalicia",
       ],
       user_role: ["admin", "personal", "aluno"],
     },

@@ -222,6 +222,7 @@ export default function PersonalTrainers() {
             <SelectItem value="vencida">Vencida</SelectItem>
             <SelectItem value="trial">Trial</SelectItem>
             <SelectItem value="pendente">Pendente</SelectItem>
+            <SelectItem value="vitalicia">Vitalícia</SelectItem>
           </SelectContent>
         </Select>
         <Select onValueChange={setSortBy} value={sortBy}>
@@ -314,6 +315,7 @@ export default function PersonalTrainers() {
                           ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                           ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                           ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
+                          ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
                         `}
                       >
                         {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
@@ -326,7 +328,7 @@ export default function PersonalTrainers() {
                     {personal.total_alunos} {personal.plan_max_alunos !== null && personal.plan_max_alunos > 0 && ` / ${personal.plan_max_alunos}`}
                   </TableCell>
                   <TableCell>
-                    {personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-'}
+                    {personal.plano_vitalicio ? 'Vitalício' : (personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-')}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

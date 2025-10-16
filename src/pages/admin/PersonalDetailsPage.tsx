@@ -190,6 +190,7 @@ export default function PersonalDetailsPage() {
                   ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                   ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                   ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
+                  ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
                 `}
               >
                 {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
@@ -207,7 +208,7 @@ export default function PersonalDetailsPage() {
           {personal.data_vencimento && (
             <div>
               <p className="text-sm font-medium text-muted-foreground">Data de Vencimento:</p>
-              <p>{format(new Date(personal.data_vencimento), "PPP", { locale: ptBR })}</p>
+              <p>{personal.plano_vitalicio ? 'Vitalício' : format(new Date(personal.data_vencimento), "PPP", { locale: ptBR })}</p>
             </div>
           )}
           {personal.desconto_percentual && personal.desconto_percentual > 0 && (

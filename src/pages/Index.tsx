@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"; // Importar Skeleton
 
 const Index = () => {
   const [email, setEmail] = useState("");
-  const { data: plans, isLoading: isLoadingPlans, error: plansError } = usePlans({ ativo: true, sortBy: 'preco_mensal_asc' });
+  const { data: plans, isLoading: isLoadingPlans, error: plansError } = usePlans({ ativo: true, visivel_landing: true, sortBy: 'ordem_exibicao_asc' });
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -375,8 +375,8 @@ const Index = () => {
           ) : plans && plans.length > 0 ? (
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {plans.map((plan, index) => (
-                <Card key={plan.id} className={`bg-gray-800 border-none text-white ${index === 1 ? 'border-2 border-primary-yellow relative' : ''}`}>
-                  {index === 1 && (
+                <Card key={plan.id} className={`bg-gray-800 border-none text-white ${plan.ordem_exibicao === 2 ? 'border-2 border-primary-yellow relative' : ''}`}>
+                  {plan.ordem_exibicao === 2 && (
                     <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-yellow text-primary-dark font-bold">
                       MAIS POPULAR
                     </Badge>
@@ -403,8 +403,8 @@ const Index = () => {
                         </div>
                       )}
                     </div>
-                    <Button variant={index === 1 ? 'default' : 'outline'} className={`w-full mt-6 ${index === 1 ? 'bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold' : 'border-white text-white bg-transparent hover:bg-white hover:text-primary-dark'}`}>
-                      {index === 2 ? 'Contato' : 'Comece Agora'}
+                    <Button variant={plan.ordem_exibicao === 2 ? 'default' : 'outline'} className={`w-full mt-6 ${plan.ordem_exibicao === 2 ? 'bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold' : 'border-white text-white bg-transparent hover:bg-white hover:text-primary-dark'}`}>
+                      {plan.nome === 'Premium' ? 'Contato' : 'Comece Agora'}
                     </Button>
                   </CardContent>
                 </Card>
