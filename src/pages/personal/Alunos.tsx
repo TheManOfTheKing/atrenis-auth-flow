@@ -129,6 +129,22 @@ export default function Alunos() {
     placeholderData: (previousData) => previousData,
   });
 
+  // Log de debug para monitorar o estado da query
+  useEffect(() => {
+    console.log("Estado da query de alunos:", {
+      isLoading,
+      hasError: !!error,
+      errorMessage: error?.message,
+      hasData: !!data,
+      alunosCount: data?.alunos?.length || 0,
+      totalCount: data?.count || 0,
+      personalId,
+      searchTerm: debouncedSearchTerm,
+      sortOrder,
+      currentPage
+    });
+  }, [isLoading, error, data, personalId, debouncedSearchTerm, sortOrder, currentPage]);
+
   // Prefetch da próxima página
   useEffect(() => {
     if (currentPage < totalPages) {
