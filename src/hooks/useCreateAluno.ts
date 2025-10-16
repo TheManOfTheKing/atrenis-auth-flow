@@ -30,6 +30,7 @@ export function useCreateAluno() {
         throw new Error("Usuário não autenticado. Por favor, faça login novamente.");
       }
 
+      // Chamando a Edge Function 'create-aluno'
       const { data, error } = await supabase.functions.invoke('create-aluno', {
         body: {
           email: params.email,
