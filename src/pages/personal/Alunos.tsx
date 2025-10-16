@@ -15,7 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 type Profile = Tables<'profiles'>;
 type AlunoWithTreinosCount = Profile & {
-  aluno_treinos: { count: number }[];
+  aluno_treinos_aluno_id_fkey: { count: number }[]; // Nome da propriedade atualizado
 };
 
 const calculateAge = (dob: string | null): number | null => {
@@ -57,7 +57,7 @@ export default function Alunos() {
         .from("profiles")
         .select(`
           *,
-          aluno_treinos(count)
+          aluno_treinos!aluno_treinos_aluno_id_fkey(count)
         `)
         .eq("personal_id", personalId)
         .eq("role", "aluno");
@@ -107,7 +107,7 @@ export default function Alunos() {
           <h1 className="text-3xl font-bold">Meus Alunos</h1>
           <p className="text-muted-foreground">Gerencie seus alunos cadastrados</p>
         </div>
-        <Link to="/personal/alunos/new"> {/* Atualizado para a nova rota */}
+        <Link to="/personal/alunos/new">
           <Button className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90">
             <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Novo Aluno
           </Button>
@@ -170,7 +170,7 @@ export default function Alunos() {
                   {aluno.objetivo && <Badge variant="secondary">{aluno.objetivo}</Badge>}
                   <p className="flex items-center gap-1">
                     <Dumbbell className="h-4 w-4" />
-                    {aluno.aluno_treinos[0]?.count || 0} Treinos Ativos
+                    {aluno.aluno_treinos_aluno_id_fkey[0]?.count || 0} Treinos Ativos
                   </p>
                 </CardContent>
                 <CardFooter className="flex gap-2">
@@ -219,7 +219,7 @@ export default function Alunos() {
                       {aluno.objetivo ? <Badge variant="secondary">{aluno.objetivo}</Badge> : "-"}
                     </TableCell>
                     <TableCell className="text-center">
-                      {aluno.aluno_treinos[0]?.count || 0}
+                      {aluno.aluno_treinos_aluno_id_fkey[0]?.count || 0}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
