@@ -63,9 +63,9 @@ export default function PersonalFormDialog({ isOpen, onClose, personal }: Person
         cref: personal.cref || "",
         planId: personal.plan_id || "",
         desconto_percentual: personal.desconto_percentual || 0,
-        periodo: personal.data_assinatura && personal.data_vencimento ? (
+        periodo: personal.plano_vitalicio ? 'vitalicio' : (personal.data_assinatura && personal.data_vencimento ? (
           (new Date(personal.data_vencimento).getMonth() !== new Date(personal.data_assinatura).getMonth() + 1) ? 'anual' : 'mensal'
-        ) : 'none',
+        ) : 'none'),
       });
     } else {
       reset({
@@ -89,7 +89,7 @@ export default function PersonalFormDialog({ isOpen, onClose, personal }: Person
   }, [availablePlans, selectedPlanId]);
 
   const valorOriginal = useMemo(() => {
-    if (!currentPlan || selectedPeriodo === 'none') return 0;
+    if (!currentPlan || selectedPeriodo === 'none' || selectedPeriodo === 'vitalicio') return 0;
     return selectedPeriodo === 'mensal' ? currentPlan.preco_mensal : (currentPlan.preco_anual || currentPlan.preco_mensal * 12);
   }, [currentPlan, selectedPeriodo]);
 

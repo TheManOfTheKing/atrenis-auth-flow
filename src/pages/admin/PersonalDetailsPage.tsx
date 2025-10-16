@@ -45,7 +45,10 @@ export default function PersonalDetailsPage() {
   }, [navigate]);
 
   const { data: personal, isLoading: isLoadingPersonal, error: personalError } = usePersonalDetailsAdmin(personalId);
-  const { data: stats, isLoading: isLoadingStats, error: statsError } = usePersonalStats(); // Este hook usa auth.uid(), então pode não funcionar para admin vendo outro personal
+  // NOTE: usePersonalStats uses auth.uid(), so it will fetch stats for the *admin* user, not the personal being viewed.
+  // A new RPC function would be needed to fetch stats for a specific personal by ID.
+  // For now, we'll use placeholders for these stats.
+  // const { data: stats, isLoading: isLoadingStats, error: statsError } = usePersonalStats(); 
   const { alunos, isLoading: isLoadingStudents, error: studentsError } = usePersonalStudents(personalId);
 
   const deletePersonalMutation = useDeletePersonalByAdmin();

@@ -334,9 +334,6 @@ export type Database = {
             | Database["public"]["Enums"]["subscription_status"]
             | null
           subscription_id: string | null
-          subscription_status:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
           telefone: string | null
           updated_at: string
         }
@@ -364,9 +361,6 @@ export type Database = {
             | Database["public"]["Enums"]["subscription_status"]
             | null
           subscription_id?: string | null
-          subscription_status?:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
           telefone?: string | null
           updated_at?: string
         }
@@ -394,9 +388,6 @@ export type Database = {
             | Database["public"]["Enums"]["subscription_status"]
             | null
           subscription_id?: string | null
-          subscription_status?:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
           telefone?: string | null
           updated_at?: string
         }
@@ -654,6 +645,7 @@ export type Database = {
           plan_id: string
           plan_max_alunos: number
           plan_nome: string
+          plano_vitalicio: boolean
           status_assinatura: Database["public"]["Enums"]["subscription_status"]
           total_alunos: number
           total_count: number

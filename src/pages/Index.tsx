@@ -28,7 +28,11 @@ import { Skeleton } from "@/components/ui/skeleton"; // Importar Skeleton
 
 const Index = () => {
   const [email, setEmail] = useState("");
-  const { data: plans, isLoading: isLoadingPlans, error: plansError } = usePlans({ ativo: true, visivel_landing: true, sortBy: 'ordem_exibicao_asc' });
+  const { data: plans, isLoading: isLoadingPlans, error: plansError } = usePlans({ 
+    ativo: true, 
+    visivel_landing: true, 
+    sortBy: 'ordem_exibicao_asc' 
+  });
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -374,41 +378,63 @@ const Index = () => {
             <p className="text-destructive text-center">Erro ao carregar planos: {plansError.message}</p>
           ) : plans && plans.length > 0 ? (
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {plans.map((plan, index) => (
-                <Card key={plan.id} className={`bg-gray-800 border-none text-white ${plan.ordem_exibicao === 2 ? 'border-2 border-primary-yellow relative' : ''}`}>
-                  {plan.ordem_exibicao === 2 && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-yellow text-primary-dark font-bold">
-                      MAIS POPULAR
-                    </Badge>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="text-2xl mb-4">{plan.nome}</CardTitle>
-                    <div>
-                      <p className="text-6xl font-black mb-2">R${plan.preco_mensal.toFixed(2).replace('.', ',')}</p>
-                      <p className="text-gray-400 text-sm">por mês</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      {(plan.recursos as string[] || []).map((recurso, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <Check className="h-5 w-5 text-secondary-green" />
-                          <span>{recurso}</span>
-                        </div>
-                      ))}
-                      {plan.max_alunos !== null && (
-                        <div className="flex items-center gap-2">
-                          <Check className="h-5 w-5 text-secondary-green" />
-                          <span>Até {plan.max_alunos === 0 ? 'ilimitados' : plan.max_alunos} alunos</span>
+              {plans.map((plan, index) => {
+                const precoMensal = plan.preco_mensal || 0;
+                const precoAnual = plan.preco_anual || 0;
+                const maxAlunos = plan.max_alunos || 0;
+                const recursos = (plan.recursos as string[] || []);
+
+                const calculateEconomy = () => {
+                  if (precoMensal > 0 && precoAnual > 0) {
+                    const economy = ((precoMensal * 12 - precoAnual) / (precoMensal * 12)) * 100;
+                    return Math.round(economy);
+                  }
+                  return 0;
+                };
+
+                const economy = calculateEconomy();
+
+                return (
+                  <Card key={plan.id} className={`bg-gray-800 border-none text-white ${plan.ordem_exibicao === 2 ? 'border-2 border-primary-yellow relative' : ''}`}>
+                    {plan.ordem_exibicao === 2 && (
+                      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-yellow text-primary-dark font-bold">
+                        MAIS POPULAR
+                      </Badge>
+                    )}
+                    <CardHeader>
+                      <CardTitle className="text-2xl mb-4">{plan.nome}</CardTitle>
+                      <div>
+                        <p className="text-6xl font-black mb-2">R${precoMensal.toFixed(2).replace('.', ',')}</p>
+                        <p className="text-gray-400 text-sm">por mês</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {precoAnual > 0 && (
+                        <div className="text-center text-sm text-gray-300">
+                          Ou R$ {precoAnual.toFixed(2).replace('.', ',')} / ano (Economize {economy}%)
                         </div>
                       )}
-                    </div>
-                    <Button variant={plan.ordem_exibicao === 2 ? 'default' : 'outline'} className={`w-full mt-6 ${plan.ordem_exibicao === 2 ? 'bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold' : 'border-white text-white bg-transparent hover:bg-white hover:text-primary-dark'}`}>
-                      {plan.nome === 'Premium' ? 'Contato' : 'Comece Agora'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="space-y-3">
+                        {recursos.map((recurso, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Check className="h-5 w-5 text-secondary-green" />
+                            <span>{recurso}</span>
+                          </div>
+                        ))}
+                        {maxAlunos !== null && (
+                          <div className="flex items-center gap-2">
+                            <Check className="h-5 w-5 text-secondary-green" />
+                            <span>Até {maxAlunos === 0 ? 'ilimitados' : maxAlunos} alunos</span>
+                          </div>
+                        )}
+                      </div>
+                      <Button variant={plan.ordem_exibicao === 2 ? 'default' : 'outline'} className={`w-full mt-6 ${plan.ordem_exibicao === 2 ? 'bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold' : 'border-white text-white bg-transparent hover:bg-white hover:text-primary-dark'}`}>
+                        {plan.nome === 'Premium' ? 'Contato' : 'Comece Agora'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <p className="text-muted-foreground text-center">Nenhum plano ativo encontrado.</p>
@@ -568,7 +594,7 @@ const Index = () => {
                 <a href="#" className="text-gray-400 hover:text-primary-yellow">
                   <Instagram className="h-6 w-6" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-primary-yellow">
+                <a href="#" className="text-400 hover:text-primary-yellow">
                   <Facebook className="h-6 w-6" />
                 </a>
                 <a href="#" className="text-gray-400 hover:text-primary-yellow">

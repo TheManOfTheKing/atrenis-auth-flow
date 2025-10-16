@@ -88,7 +88,7 @@ serve(async (req) => {
     // Handle plan assignment if provided
     let dataAssinatura = null;
     let dataVencimento = null;
-    let statusAssinatura = 'pendente';
+    let statusAssinatura: string = 'pendente'; // Default to pending
     let planoVitalicio = false;
 
     if (plan_id && periodo && periodo !== 'none') {
@@ -102,11 +102,10 @@ serve(async (req) => {
         console.error("Error fetching plan data for new personal:", planError?.message);
       } else {
         dataAssinatura = new Date().toISOString();
-        if (planData.tipo === 'vitalicio') {
+        if (planData.tipo === 'vitalicio' || periodo === 'vitalicio') {
           planoVitalicio = true;
           statusAssinatura = 'vitalicia';
-          // Para planos vitalícios, data_vencimento pode ser null ou uma data muito distante
-          dataVencimento = null; // Ou new Date(9999, 11, 31).toISOString();
+          dataVencimento = null; // Vitalício não tem data de vencimento
         } else if (periodo === 'mensal') {
           const nextMonth = new Date();
           nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -134,7 +133,7 @@ serve(async (req) => {
         desconto_percentual: desconto_percentual || 0,
         data_assinatura: dataAssinatura,
         data_vencimento: dataVencimento,
-        status_assinatura: statusAssinatura,
+        status_assinatura: statusAssinatura as any, // Cast to match enum
         plano_vitalicio: planoVitalicio,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

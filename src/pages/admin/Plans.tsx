@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables, Enums } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +9,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Edit, Power, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { PlusCircle, Edit, Power, Trash2, CheckCircle2, XCircle, Copy, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { usePlans, useTogglePlanStatus, useDeletePlan } from "@/hooks/usePlans";
+import {
+  usePlans,
+  useTogglePlanStatus,
+  useDeletePlan,
+  useDuplicatePlan,
+  useUpdatePlanOrder,
+  useCountPersonalsWithPlan
+} from "@/hooks/usePlans";
 import PlanFormDialog from "@/components/admin/PlanFormDialog";
+import PersonalsWithPlanDialog from "@/components/admin/PersonalsWithPlanDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Plan = Tables<'plans'>;
 
@@ -20,9 +36,13 @@ export default function AdminPlans() {
   const navigate = useNavigate();
   const [adminId, setAdminId] = useState<string | null>(null);
   const [filterActive, setFilterActive] = useState<string>("all"); // 'all', 'true', 'false'
-  const [sortBy, setSortBy] = useState<string>("nome_asc"); // 'nome_asc', 'preco_mensal_asc', etc.
+  const [filterType, setFilterType] = useState<string>("all"); // 'all', 'publico', 'vitalicio'
+  const [sortBy, setSortBy] = useState<string>("ordem_exibicao_asc"); // Default sort by display order
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | undefined>(undefined);
+
+  const [isPersonalsDialogOpen, setIsPersonalsDialogOpen] = useState(false);
+  const [selectedPlanForPersonals, setSelectedPlanForPersonals] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -39,11 +59,14 @@ export default function AdminPlans() {
 
   const { data: plans, isLoading, error } = usePlans({
     ativo: filterActive === "all" ? null : filterActive === "true",
-    sortBy: sortBy as any, // Cast para o tipo correto
+    tipo: filterType === "all" ? null : (filterType as Enums<'plan_type'>),
+    sortBy: sortBy as any,
   });
 
   const togglePlanStatusMutation = useTogglePlanStatus();
   const deletePlanMutation = useDeletePlan();
+  const duplicatePlanMutation = useDuplicatePlan();
+  const updatePlanOrderMutation = useUpdatePlanOrder();
 
   const handleNewPlan = () => {
     setSelectedPlan(undefined);
@@ -59,10 +82,40 @@ export default function AdminPlans() {
     togglePlanStatusMutation.mutate({ id: planId, ativo: !currentStatus });
   };
 
-  const handleDeletePlan = (planId: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este plano? Esta ação é irreversível.")) {
-      deletePlanMutation.mutate(planId);
+  const handleDeletePlan = (plan: Plan) => {
+    if (window.confirm(`Tem certeza que deseja excluir o plano "${plan.nome}"? Esta ação é irreversível e só é possível se não houver personal trainers associados a ele.`)) {
+      deletePlanMutation.mutate(plan.id);
     }
+  };
+
+  const handleDuplicatePlan = (planId: string) => {
+    duplicatePlanMutation.mutate(planId);
+  };
+
+  const handleViewPersonals = (plan: Plan) => {
+    setSelectedPlanForPersonals({ id: plan.id, name: plan.nome });
+    setIsPersonalsDialogOpen(true);
+  };
+
+  const handleMovePlan = (planId: string, direction: 'up' | 'down') => {
+    if (!plans) return;
+
+    const currentPlanIndex = plans.findIndex(p => p.id === planId);
+    if (currentPlanIndex === -1) return;
+
+    const currentPlan = plans[currentPlanIndex];
+    let newOrder = currentPlan.ordem_exibicao || 0;
+
+    if (direction === 'up') {
+      if (currentPlanIndex === 0) return; // Already at the top
+      const prevPlan = plans[currentPlanIndex - 1];
+      newOrder = (prevPlan.ordem_exibicao || 0) - 1;
+    } else { // direction === 'down'
+      if (currentPlanIndex === plans.length - 1) return; // Already at the bottom
+      const nextPlan = plans[currentPlanIndex + 1];
+      newOrder = (nextPlan.ordem_exibicao || 0) + 1;
+    }
+    updatePlanOrderMutation.mutate({ id: planId, newOrder });
   };
 
   if (error) {
@@ -81,7 +134,7 @@ export default function AdminPlans() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <Select onValueChange={setFilterActive} value={filterActive}>
           <SelectTrigger className="col-span-full md:col-span-1">
             <SelectValue placeholder="Filtrar por status" />
@@ -93,11 +146,23 @@ export default function AdminPlans() {
           </SelectContent>
         </Select>
 
+        <Select onValueChange={setFilterType} value={filterType}>
+          <SelectTrigger className="col-span-full md:col-span-1">
+            <SelectValue placeholder="Filtrar por tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Tipos</SelectItem>
+            <SelectItem value="publico">Público</SelectItem>
+            <SelectItem value="vitalicio">Vitalício</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select onValueChange={setSortBy} value={sortBy}>
           <SelectTrigger className="col-span-full md:col-span-1">
             <SelectValue placeholder="Ordenar por..." />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="ordem_exibicao_asc">Ordem de Exibição</SelectItem>
             <SelectItem value="nome_asc">Nome (A-Z)</SelectItem>
             <SelectItem value="nome_desc">Nome (Z-A)</SelectItem>
             <SelectItem value="preco_mensal_asc">Preço Mensal (Crescente)</SelectItem>
@@ -114,10 +179,11 @@ export default function AdminPlans() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Preço Mensal</TableHead>
                 <TableHead>Preço Anual</TableHead>
                 <TableHead>Max Alunos</TableHead>
-                <TableHead>Recursos</TableHead>
+                <TableHead>Visível Landing</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -128,8 +194,9 @@ export default function AdminPlans() {
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                 </TableRow>
@@ -143,27 +210,36 @@ export default function AdminPlans() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Preço Mensal</TableHead>
                 <TableHead>Preço Anual</TableHead>
                 <TableHead>Max Alunos</TableHead>
-                <TableHead>Recursos</TableHead>
+                <TableHead>Visível Landing</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {plans.map((plan) => (
+              {plans.map((plan, index) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium">{plan.nome}</TableCell>
+                  <TableCell>
+                    <Badge
+                      className={`
+                        ${plan.tipo === 'publico' && 'bg-secondary-blue text-white'}
+                        ${plan.tipo === 'vitalicio' && 'bg-primary-yellow text-primary-dark'}
+                      `}
+                    >
+                      {plan.tipo?.charAt(0).toUpperCase() + plan.tipo?.slice(1) || 'N/A'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>R$ {plan.preco_mensal.toFixed(2)}</TableCell>
                   <TableCell>{plan.preco_anual ? `R$ ${plan.preco_anual.toFixed(2)}` : '-'}</TableCell>
                   <TableCell>{plan.max_alunos === 0 ? 'Ilimitado' : plan.max_alunos}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1 max-w-[200px]">
-                      {(plan.recursos as string[] || []).map((recurso, idx) => (
-                        <Badge key={idx} variant="secondary" className="whitespace-nowrap">{recurso}</Badge>
-                      ))}
-                    </div>
+                    <Badge variant={plan.visivel_landing ? "default" : "destructive"}>
+                      {plan.visivel_landing ? "Sim" : "Não"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={plan.ativo ? "default" : "outline"}>
@@ -171,22 +247,48 @@ export default function AdminPlans() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditPlan(plan)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleStatus(plan.id, plan.ativo || false)}
-                        disabled={togglePlanStatusMutation.isPending}
-                      >
-                        {plan.ativo ? <XCircle className="h-4 w-4 text-destructive" /> : <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)} disabled={deletePlanMutation.isPending}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
+                          <Edit className="mr-2 h-4 w-4" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicatePlan(plan.id)} disabled={duplicatePlanMutation.isPending}>
+                          <Copy className="mr-2 h-4 w-4" /> Duplicar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewPersonals(plan)}>
+                          <Users className="mr-2 h-4 w-4" /> Ver Personals
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleToggleStatus(plan.id, plan.ativo || false)}
+                          disabled={togglePlanStatusMutation.isPending}
+                          className={plan.ativo ? "text-destructive" : "text-green-600"}
+                        >
+                          {plan.ativo ? <XCircle className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                          {plan.ativo ? 'Desativar' : 'Ativar'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeletePlan(plan)}
+                          disabled={deletePlanMutation.isPending}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Deletar
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleMovePlan(plan.id, 'up')} disabled={index === 0 || updatePlanOrderMutation.isPending}>
+                          <ArrowUp className="mr-2 h-4 w-4" /> Mover para Cima
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleMovePlan(plan.id, 'down')} disabled={index === plans.length - 1 || updatePlanOrderMutation.isPending}>
+                          <ArrowDown className="mr-2 h-4 w-4" /> Mover para Baixo
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -202,6 +304,15 @@ export default function AdminPlans() {
         onClose={() => setIsFormDialogOpen(false)}
         plan={selectedPlan}
       />
+
+      {selectedPlanForPersonals && (
+        <PersonalsWithPlanDialog
+          isOpen={isPersonalsDialogOpen}
+          onClose={() => setIsPersonalsDialogOpen(false)}
+          planId={selectedPlanForPersonals.id}
+          planName={selectedPlanForPersonals.name}
+        />
+      )}
     </div>
   );
 }

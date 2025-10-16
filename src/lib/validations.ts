@@ -142,10 +142,17 @@ export const planSchema = z.object({
     .max(500, 'Descrição muito longa')
     .optional()
     .or(z.literal('')),
+  tipo: z.enum(['publico', 'vitalicio'], {
+    errorMap: () => ({ message: "Selecione um tipo de plano" }),
+  }),
   preco_mensal: z.coerce.number()
-    .positive('Preço mensal deve ser maior que zero'),
+    .min(0, 'Preço mensal não pode ser negativo')
+    .refine((val) => val > 0, {
+      message: 'Preço mensal deve ser maior que zero para planos públicos',
+      path: ['preco_mensal'],
+    }),
   preco_anual: z.coerce.number()
-    .positive('Preço anual deve ser maior que zero')
+    .min(0, 'Preço anual não pode ser negativo')
     .optional()
     .or(z.literal(0)) // Permite 0 para indicar que não há preço anual
     .transform(e => e === 0 ? undefined : e), // Transforma 0 de volta para undefined
@@ -154,14 +161,36 @@ export const planSchema = z.object({
     .min(0, 'Limite de alunos não pode ser negativo'),
   recursos: z.array(z.string().min(1, 'Recurso não pode ser vazio')).optional(),
   ativo: z.boolean().default(true),
-}).refine((data) => {
-  if (data.preco_anual !== undefined && data.preco_anual > 0 && data.preco_mensal * 12 < data.preco_anual) {
-    return false; // Preço anual não pode ser maior que 12x o mensal
+  visivel_landing: z.boolean().default(true),
+  ordem_exibicao: z.coerce.number()
+    .int('Ordem de exibição deve ser um número inteiro')
+    .min(0, 'Ordem de exibição não pode ser negativa')
+    .default(0),
+}).superRefine((data, ctx) => {
+  // Validação de preço mensal para planos vitalícios
+  if (data.tipo === 'vitalicio' && data.preco_mensal !== 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Preço mensal deve ser 0 para planos vitalícios.",
+      path: ["preco_mensal"],
+    });
   }
-  return true;
-}, {
-  message: "Preço anual não pode ser maior que 12x o preço mensal",
-  path: ["preco_anual"],
+  // Validação de preço anual
+  if (data.preco_anual !== undefined && data.preco_anual > 0 && data.preco_mensal * 12 < data.preco_anual) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Preço anual não pode ser maior que 12x o preço mensal",
+      path: ["preco_anual"],
+    });
+  }
+  // Validação de visibilidade na landing para planos vitalícios
+  if (data.tipo === 'vitalicio' && data.visivel_landing) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Planos vitalícios não podem ser visíveis na landing page.",
+      path: ["visivel_landing"],
+    });
+  }
 });
 
 // Schema para atribuição de plano a personal trainer
@@ -172,7 +201,7 @@ export const assignPlanSchema = z.object({
     .min(0, 'Desconto não pode ser negativo')
     .max(100, 'Desconto não pode ser maior que 100%')
     .default(0),
-  periodo: z.enum(['mensal', 'anual'], {
+  periodo: z.enum(['mensal', 'anual', 'vitalicio'], { // Adicionado 'vitalicio'
     errorMap: () => ({ message: "Selecione um período de assinatura" }),
   }),
 });
@@ -194,7 +223,7 @@ export const personalAdminSchema = z.object({
     .min(0, 'Desconto não pode ser negativo')
     .max(100, 'Desconto não pode ser maior que 100%')
     .default(0),
-  periodo: z.enum(['mensal', 'anual', 'none'], {
+  periodo: z.enum(['mensal', 'anual', 'vitalicio', 'none'], { // Adicionado 'vitalicio'
     errorMap: () => ({ message: "Selecione um período de assinatura" }),
   }).default('none'),
 }).superRefine(async (data, ctx) => {
