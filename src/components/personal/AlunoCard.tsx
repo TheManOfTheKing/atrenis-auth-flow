@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dumbbell, Eye, Edit, Ban, MoreHorizontal, CalendarDays, Target, Phone, History, ListChecks } from "lucide-react";
+import { Dumbbell, Eye, Edit, Ban, MoreHorizontal, CalendarDays, Target, Phone, History, ListChecks, CheckCircle2, XCircle } from "lucide-react";
 import { useAlunoUtils } from "@/hooks/useAlunoUtils";
 import { AlunoWithTreinosCount } from "@/hooks/usePersonalStudents";
 
@@ -21,7 +21,7 @@ interface AlunoCardProps {
   onEdit: (id: string) => void;
   onAssignWorkout: (aluno: AlunoWithTreinosCount) => void;
   onViewHistory: (id: string) => void;
-  onDeactivate: (id: string) => void;
+  onToggleStatus: (aluno: AlunoWithTreinosCount) => void; // Alterado para um único handler
 }
 
 export default function AlunoCard({
@@ -30,7 +30,7 @@ export default function AlunoCard({
   onEdit,
   onAssignWorkout,
   onViewHistory,
-  onDeactivate,
+  onToggleStatus,
 }: AlunoCardProps) {
   const { calculateAge, getInitials } = useAlunoUtils();
 
@@ -42,10 +42,13 @@ export default function AlunoCard({
             {getInitials(aluno.nome)}
           </AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex-1">
           <CardTitle className="text-lg">{aluno.nome}</CardTitle>
           <p className="text-sm text-muted-foreground">{aluno.email}</p>
         </div>
+        <Badge variant={aluno.ativo ? "default" : "outline"}>
+          {aluno.ativo ? "Ativo" : "Inativo"}
+        </Badge>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         {aluno.telefone && (
@@ -90,8 +93,12 @@ export default function AlunoCard({
               <History className="mr-2 h-4 w-4" /> Ver Histórico
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onClick={() => onDeactivate(aluno.id)}>
-              <Ban className="mr-2 h-4 w-4" /> Desativar Aluno
+            <DropdownMenuItem 
+              className={aluno.ativo ? "text-destructive" : "text-green-600"} 
+              onClick={() => onToggleStatus(aluno)}
+            >
+              {aluno.ativo ? <XCircle className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              {aluno.ativo ? 'Desativar Aluno' : 'Reativar Aluno'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -27,6 +27,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams(); // Hook para gerenciar query params
   const sessionExpired = searchParams.get("expired") === "true";
+  const accountDeactivated = searchParams.get("deactivated") === "true"; // Novo param para conta desativada
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -37,14 +38,22 @@ export default function Login() {
     },
   });
 
-  // Limpar o query param 'expired' após a renderização inicial
+  // Limpar os query params após a renderização inicial
   useEffect(() => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    let changed = false;
     if (sessionExpired) {
-      const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete("expired");
+      changed = true;
+    }
+    if (accountDeactivated) {
+      newSearchParams.delete("deactivated");
+      changed = true;
+    }
+    if (changed) {
       setSearchParams(newSearchParams, { replace: true }); // Substitui a entrada no histórico
     }
-  }, [sessionExpired, searchParams, setSearchParams]);
+  }, [sessionExpired, accountDeactivated, searchParams, setSearchParams]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -72,7 +81,7 @@ export default function Login() {
       if (authData.user) {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("nome, role")
+          .select("nome, role, ativo") // Buscar também o status 'ativo'
           .eq("id", authData.user.id)
           .single();
 
@@ -88,6 +97,18 @@ export default function Login() {
             ),
           });
           await supabase.auth.signOut();
+          return;
+        }
+
+        // Verificar se a conta está ativa
+        if (profile.ativo === false) {
+          toast({
+            variant: "destructive",
+            title: "Conta Desativada",
+            description: "Sua conta foi desativada. Entre em contato com seu personal trainer.",
+          });
+          await supabase.auth.signOut(); // Forçar logout
+          navigate("/login?deactivated=true", { replace: true }); // Redirecionar com param
           return;
         }
 
@@ -129,6 +150,15 @@ export default function Login() {
               <AlertTitle>Sessão Expirada</AlertTitle>
               <AlertDescription>
                 Sua sessão expirou por inatividade. Por favor, faça login novamente.
+              </AlertDescription>
+            </Alert>
+          )}
+          {accountDeactivated && (
+            <Alert variant="destructive" className="mb-4">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Conta Desativada</AlertTitle>
+              <AlertDescription>
+                Sua conta foi desativada. Por favor, entre em contato com seu personal trainer.
               </AlertDescription>
             </Alert>
           )}

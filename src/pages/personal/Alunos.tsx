@@ -17,6 +17,7 @@ import AlunosPagination from "@/components/personal/AlunosPagination";
 import AlunosEmptyState from "@/components/personal/AlunosEmptyState";
 import AlunoDetailsDialog from "@/components/personal/AlunoDetailsDialog";
 import AssignWorkoutDialog from "@/components/personal/AssignWorkoutDialog";
+import AlunoStatusDialog from "@/components/personal/AlunoStatusDialog"; // Novo componente
 
 const ITEMS_PER_PAGE = 10; // Mantido aqui para referência, mas gerenciado no hook
 
@@ -29,6 +30,10 @@ export default function Alunos() {
   const [selectedAlunoForDetails, setSelectedAlunoForDetails] = useState<AlunoWithTreinosCount | null>(null);
   const [isAssignWorkoutDialogOpen, setIsAssignWorkoutDialogOpen] = useState(false);
   const [selectedAlunoForWorkout, setSelectedAlunoForWorkout] = useState<AlunoWithTreinosCount | null>(null);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false); // Novo estado para o diálogo de status
+  const [selectedAlunoForStatus, setSelectedAlunoForStatus] = useState<AlunoWithTreinosCount | null>(null);
+  const [statusActionType, setStatusActionType] = useState<'deactivate' | 'reactivate'>('deactivate');
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -52,6 +57,8 @@ export default function Alunos() {
     setSearchTerm,
     sortOrder,
     setSortOrder,
+    statusFilter, // Novo filtro
+    setStatusFilter, // Novo setter para o filtro
     currentPage,
     setCurrentPage,
   } = usePersonalStudents(personalId);
@@ -74,24 +81,10 @@ export default function Alunos() {
     navigate(`/personal/alunos/${id}/historico`);
   };
 
-  const handleDeactivate = (id: string) => {
-    toast({
-      variant: "destructive",
-      title: "Funcionalidade em desenvolvimento",
-      description: "A desativação de alunos requer um campo de status na tabela de perfis. Por enquanto, esta ação não está disponível.",
-    });
-    // Implementação futura:
-    // try {
-    //   const { error } = await supabase
-    //     .from("profiles")
-    //     .update({ status: "inativo" }) // Exemplo: requer um campo 'status' na tabela profiles
-    //     .eq("id", id);
-    //   if (error) throw error;
-    //   toast({ title: "Aluno desativado!", description: "O aluno foi marcado como inativo." });
-    //   queryClient.invalidateQueries({ queryKey: ["personalStudents"] });
-    // } catch (error: any) {
-    //   toast({ variant: "destructive", title: "Erro ao desativar aluno", description: error.message });
-    // }
+  const handleToggleStatus = (aluno: AlunoWithTreinosCount) => {
+    setSelectedAlunoForStatus(aluno);
+    setStatusActionType(aluno.ativo ? 'deactivate' : 'reactivate');
+    setIsStatusDialogOpen(true);
   };
 
   if (error) {
@@ -100,6 +93,7 @@ export default function Alunos() {
       personalId,
       searchTerm,
       sortOrder,
+      statusFilter,
       currentPage
     });
     
@@ -150,6 +144,8 @@ export default function Alunos() {
         setSearchTerm={setSearchTerm}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
       />
 
       {isLoading ? (
@@ -176,7 +172,7 @@ export default function Alunos() {
                   onEdit={handleEdit}
                   onAssignWorkout={handleAssignWorkout}
                   onViewHistory={handleViewHistory}
-                  onDeactivate={handleDeactivate}
+                  onToggleStatus={handleToggleStatus}
                 />
               ))}
             </div>
@@ -192,6 +188,7 @@ export default function Alunos() {
                     <TableHead className="hidden lg:table-cell">Idade</TableHead>
                     <TableHead className="hidden lg:table-cell">Objetivo</TableHead>
                     <TableHead className="text-center">Treinos Ativos</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -204,7 +201,7 @@ export default function Alunos() {
                       onEdit={handleEdit}
                       onAssignWorkout={handleAssignWorkout}
                       onViewHistory={handleViewHistory}
-                      onDeactivate={handleDeactivate}
+                      onToggleStatus={handleToggleStatus}
                     />
                   ))}
                 </TableBody>
@@ -238,6 +235,15 @@ export default function Alunos() {
           aluno={selectedAlunoForWorkout}
           isOpen={isAssignWorkoutDialogOpen}
           onClose={() => setIsAssignWorkoutDialogOpen(false)}
+        />
+      )}
+
+      {selectedAlunoForStatus && (
+        <AlunoStatusDialog
+          aluno={selectedAlunoForStatus}
+          isOpen={isStatusDialogOpen}
+          onClose={() => setIsStatusDialogOpen(false)}
+          actionType={statusActionType}
         />
       )}
     </div>

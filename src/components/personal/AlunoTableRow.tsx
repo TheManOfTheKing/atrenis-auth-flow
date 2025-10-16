@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dumbbell, Eye, Edit, Ban, MoreHorizontal, History, ListChecks } from "lucide-react";
+import { Dumbbell, Eye, Edit, Ban, MoreHorizontal, History, ListChecks, CheckCircle2, XCircle } from "lucide-react";
 import { useAlunoUtils } from "@/hooks/useAlunoUtils";
 import { AlunoWithTreinosCount } from "@/hooks/usePersonalStudents";
 
@@ -21,7 +21,7 @@ interface AlunoTableRowProps {
   onEdit: (id: string) => void;
   onAssignWorkout: (aluno: AlunoWithTreinosCount) => void;
   onViewHistory: (id: string) => void;
-  onDeactivate: (id: string) => void;
+  onToggleStatus: (aluno: AlunoWithTreinosCount) => void; // Alterado para um único handler
 }
 
 export default function AlunoTableRow({
@@ -30,7 +30,7 @@ export default function AlunoTableRow({
   onEdit,
   onAssignWorkout,
   onViewHistory,
-  onDeactivate,
+  onToggleStatus,
 }: AlunoTableRowProps) {
   const { calculateAge, getInitials } = useAlunoUtils();
 
@@ -55,6 +55,11 @@ export default function AlunoTableRow({
       <TableCell className="text-center">
         {aluno.aluno_treinos[0]?.count || 0}
       </TableCell>
+      <TableCell>
+        <Badge variant={aluno.ativo ? "default" : "outline"}>
+          {aluno.ativo ? "Ativo" : "Inativo"}
+        </Badge>
+      </TableCell>
       <TableCell className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -77,8 +82,12 @@ export default function AlunoTableRow({
               <History className="mr-2 h-4 w-4" /> Ver Histórico
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onClick={() => onDeactivate(aluno.id)}>
-              <Ban className="mr-2 h-4 w-4" /> Desativar Aluno
+            <DropdownMenuItem 
+              className={aluno.ativo ? "text-destructive" : "text-green-600"} 
+              onClick={() => onToggleStatus(aluno)}
+            >
+              {aluno.ativo ? <XCircle className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              {aluno.ativo ? 'Desativar Aluno' : 'Reativar Aluno'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

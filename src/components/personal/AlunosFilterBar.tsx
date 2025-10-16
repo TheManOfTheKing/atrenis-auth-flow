@@ -8,6 +8,8 @@ interface AlunosFilterBarProps {
   setSearchTerm: (term: string) => void;
   sortOrder: string;
   setSortOrder: (order: string) => void;
+  statusFilter: boolean | null;
+  setStatusFilter: (status: boolean | null) => void;
 }
 
 export default function AlunosFilterBar({
@@ -15,6 +17,8 @@ export default function AlunosFilterBar({
   setSearchTerm,
   sortOrder,
   setSortOrder,
+  statusFilter,
+  setStatusFilter,
 }: AlunosFilterBarProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -37,6 +41,16 @@ export default function AlunosFilterBar({
           <SelectItem value="nome_desc">Nome (Z-A)</SelectItem>
           <SelectItem value="recentes">Mais recentes</SelectItem>
           <SelectItem value="antigos">Mais antigos</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select onValueChange={(value) => setStatusFilter(value === "all" ? null : value === "true")} value={statusFilter === null ? "all" : statusFilter.toString()}>
+        <SelectTrigger className="col-span-full md:col-span-1">
+          <SelectValue placeholder="Filtrar por status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos os Status</SelectItem>
+          <SelectItem value="true">Ativos</SelectItem>
+          <SelectItem value="false">Inativos</SelectItem>
         </SelectContent>
       </Select>
     </div>

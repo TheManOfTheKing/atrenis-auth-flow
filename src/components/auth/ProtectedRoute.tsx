@@ -19,10 +19,12 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [isAccountDeactivated, setIsAccountDeactivated] = useState(false);
 
   const checkAuth = async () => {
     setIsLoading(true);
     setProfileError(null);
+    setIsAccountDeactivated(false);
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -36,11 +38,19 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
       const { data: profile, error: profileFetchError } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, ativo") // Buscar também o status 'ativo'
         .eq("id", session.user.id)
         .single();
 
       if (profileFetchError) throw profileFetchError;
+
+      // Verificar se a conta está ativa
+      if (profile.ativo === false) {
+        setIsAccountDeactivated(true);
+        setIsAuthenticated(false); // Não autenticar se a conta estiver desativada
+        await supabase.auth.signOut(); // Forçar logout para limpar a sessão
+        return;
+      }
 
       setIsAuthenticated(true);
       setUserRole(profile.role as UserRole);
@@ -60,10 +70,13 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       if (event === "SIGNED_OUT") {
         setIsAuthenticated(false);
         setUserRole(null);
-        sonnerToast.error("Sua sessão expirou.", {
-          description: "Por favor, faça login novamente.",
-          duration: 5000,
-        });
+        // Se o logout não foi por desativação, mostrar toast genérico
+        if (!isAccountDeactivated) {
+          sonnerToast.error("Sua sessão expirou.", {
+            description: "Por favor, faça login novamente.",
+            duration: 5000,
+          });
+        }
         // Limpar localStorage e sessionStorage para garantir que não há dados de sessão antigos
         localStorage.clear();
         sessionStorage.clear();
@@ -76,13 +89,32 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     });
 
     return () => subscription.unsubscribe();
-  }, []); // Executar apenas uma vez na montagem
+  }, [isAccountDeactivated]); // Adicionar isAccountDeactivated como dependência
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-8">
         <Loader2 className="h-16 w-16 text-primary-yellow animate-spin mb-4" />
         <p className="text-lg text-muted-foreground">Verificando sua autenticação...</p>
+      </div>
+    );
+  }
+
+  if (isAccountDeactivated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+        <Alert variant="destructive" className="w-full max-w-md">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Conta Desativada</AlertTitle>
+          <AlertDescription>
+            Sua conta foi desativada. Por favor, entre em contato com seu personal trainer para mais informações.
+            <div className="flex gap-2 mt-4">
+              <Button onClick={() => window.location.href = "/login"} variant="outline">
+                Ir para o Login
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -99,7 +131,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
               <Button onClick={checkAuth} variant="outline">Tentar Novamente</Button>
               <Button onClick={() => {
                 supabase.auth.signOut();
-                navigate("/login");
+                window.location.href = "/login"; // Usar window.location.href para garantir o refresh
               }} variant="destructive">
                 <LogOut className="mr-2 h-4 w-4" /> Fazer Logout
               </Button>

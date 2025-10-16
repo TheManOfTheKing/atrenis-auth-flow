@@ -16,6 +16,7 @@ export function usePersonalStudents(personalId: string | null) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("nome_asc"); // 'nome_asc', 'nome_desc', 'recentes', 'antigos'
+  const [statusFilter, setStatusFilter] = useState<boolean | null>(null); // true = ativos, false = inativos, null = todos
   const [currentPage, setCurrentPage] = useState(1);
 
   // Debounce search term
@@ -30,33 +31,50 @@ export function usePersonalStudents(personalId: string | null) {
   }, [searchTerm]);
 
   const { data, isLoading, error } = useQuery<{ alunos: AlunoWithTreinosCount[], count: number }>({
-    queryKey: ["personalStudents", personalId, debouncedSearchTerm, sortOrder, currentPage],
+    queryKey: ["personalStudents", personalId, debouncedSearchTerm, sortOrder, statusFilter, currentPage],
     queryFn: async () => {
       if (!personalId) return { alunos: [], count: 0 };
 
-      const { data, error } = await supabase.rpc('get_alunos_with_treinos', {
-        personal_id_param: personalId,
-        search_term: debouncedSearchTerm || null,
-        sort_order: sortOrder,
-        page_size: ITEMS_PER_PAGE,
-        page_number: currentPage
-      });
+      let query = supabase
+        .from("profiles")
+        .select(`
+          *,
+          aluno_treinos(count)
+        `, { count: 'exact' })
+        .eq("personal_id", personalId)
+        .eq("role", "aluno");
 
-      if (error) {
-        console.error("Erro ao chamar RPC get_alunos_with_treinos:", error);
-        throw error;
+      if (debouncedSearchTerm) {
+        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
       }
 
-      const alunos = data || [];
-      const count = alunos.length > 0 ? Number(alunos[0].total_count) : 0;
+      if (statusFilter !== null) {
+        query = query.eq("ativo", statusFilter);
+      }
 
-      return {
-        alunos: alunos.map(a => ({
-          ...a,
-          aluno_treinos: [{ count: a.treinos_count || 0 }]
-        })),
-        count
-      };
+      switch (sortOrder) {
+        case "nome_asc":
+          query = query.order("nome", { ascending: true });
+          break;
+        case "nome_desc":
+          query = query.order("nome", { ascending: false });
+          break;
+        case "recentes":
+          query = query.order("created_at", { ascending: false });
+          break;
+        case "antigos":
+          query = query.order("created_at", { ascending: true });
+          break;
+      }
+
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      query = query.range(from, to);
+
+      const { data: alunosData, count, error } = await query;
+      if (error) throw error;
+
+      return { alunos: alunosData as AlunoWithTreinosCount[], count: count || 0 };
     },
     enabled: !!personalId,
     staleTime: 5 * 60 * 1000,
@@ -72,39 +90,56 @@ export function usePersonalStudents(personalId: string | null) {
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
       queryClient.prefetchQuery({
-        queryKey: ["personalStudents", personalId, debouncedSearchTerm, sortOrder, nextPage],
+        queryKey: ["personalStudents", personalId, debouncedSearchTerm, sortOrder, statusFilter, nextPage],
         queryFn: async () => {
           if (!personalId) return { alunos: [], count: 0 };
           
-          const { data, error } = await supabase.rpc('get_alunos_with_treinos', {
-            personal_id_param: personalId,
-            search_term: debouncedSearchTerm || null,
-            sort_order: sortOrder,
-            page_size: ITEMS_PER_PAGE,
-            page_number: nextPage
-          });
+          let query = supabase
+            .from("profiles")
+            .select(`
+              *,
+              aluno_treinos(count)
+            `, { count: 'exact' })
+            .eq("personal_id", personalId)
+            .eq("role", "aluno");
 
-          if (error) {
-            console.error("Erro ao chamar RPC get_alunos_with_treinos para prefetch:", error);
-            throw error;
+          if (debouncedSearchTerm) {
+            query = query.or(`nome.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
           }
 
-          const alunos = data || [];
-          const count = alunos.length > 0 ? Number(alunos[0].total_count) : 0;
+          if (statusFilter !== null) {
+            query = query.eq("ativo", statusFilter);
+          }
 
-          return {
-            alunos: alunos.map(a => ({
-              ...a,
-              aluno_treinos: [{ count: a.treinos_count || 0 }]
-            })),
-            count
-          };
+          switch (sortOrder) {
+            case "nome_asc":
+              query = query.order("nome", { ascending: true });
+              break;
+            case "nome_desc":
+              query = query.order("nome", { ascending: false });
+              break;
+            case "recentes":
+              query = query.order("created_at", { ascending: false });
+              break;
+            case "antigos":
+              query = query.order("created_at", { ascending: true });
+              break;
+          }
+
+          const from = (nextPage - 1) * ITEMS_PER_PAGE;
+          const to = from + ITEMS_PER_PAGE - 1;
+          query = query.range(from, to);
+
+          const { data: alunosData, count, error } = await query;
+          if (error) throw error;
+
+          return { alunos: alunosData as AlunoWithTreinosCount[], count: count || 0 };
         },
         staleTime: 5 * 60 * 1000,
         cacheTime: 10 * 60 * 1000,
       });
     }
-  }, [currentPage, totalPages, personalId, debouncedSearchTerm, sortOrder, queryClient]);
+  }, [currentPage, totalPages, personalId, debouncedSearchTerm, sortOrder, statusFilter, queryClient]);
 
   // Log de debug para monitorar o estado da query
   useEffect(() => {
@@ -118,9 +153,10 @@ export function usePersonalStudents(personalId: string | null) {
       personalId,
       searchTerm: debouncedSearchTerm,
       sortOrder,
+      statusFilter,
       currentPage
     });
-  }, [isLoading, error, data, personalId, debouncedSearchTerm, sortOrder, currentPage]);
+  }, [isLoading, error, data, personalId, debouncedSearchTerm, sortOrder, statusFilter, currentPage]);
 
 
   return {
@@ -133,6 +169,8 @@ export function usePersonalStudents(personalId: string | null) {
     setSearchTerm,
     sortOrder,
     setSortOrder,
+    statusFilter,
+    setStatusFilter,
     currentPage,
     setCurrentPage,
   };

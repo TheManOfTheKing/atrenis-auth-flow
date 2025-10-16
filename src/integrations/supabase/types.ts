@@ -68,6 +68,48 @@ export type Database = {
           },
         ]
       }
+      aluno_status_history: {
+        Row: {
+          aluno_id: string
+          ativo: boolean
+          changed_at: string
+          changed_by: string | null
+          id: string
+          motivo: string | null
+        }
+        Insert: {
+          aluno_id: string
+          ativo: boolean
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Update: {
+          aluno_id?: string
+          ativo?: boolean
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aluno_status_history_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aluno_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aluno_treinos: {
         Row: {
           aluno_id: string
@@ -260,15 +302,18 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ativo: boolean | null
           created_at: string
           cref: string | null
           data_assinatura: string | null
+          data_desativacao: string | null
           data_nascimento: string | null
           data_vencimento: string | null
           desconto_percentual: number | null
           email: string
           foto_perfil: string | null
           id: string
+          motivo_desativacao: string | null
           nome: string
           objetivo: string | null
           observacoes_aluno: string | null
@@ -286,15 +331,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativo?: boolean | null
           created_at?: string
           cref?: string | null
           data_assinatura?: string | null
+          data_desativacao?: string | null
           data_nascimento?: string | null
           data_vencimento?: string | null
           desconto_percentual?: number | null
           email: string
           foto_perfil?: string | null
           id: string
+          motivo_desativacao?: string | null
           nome: string
           objetivo?: string | null
           observacoes_aluno?: string | null
@@ -312,15 +360,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativo?: boolean | null
           created_at?: string
           cref?: string | null
           data_assinatura?: string | null
+          data_desativacao?: string | null
           data_nascimento?: string | null
           data_vencimento?: string | null
           desconto_percentual?: number | null
           email?: string
           foto_perfil?: string | null
           id?: string
+          motivo_desativacao?: string | null
           nome?: string
           objetivo?: string | null
           observacoes_aluno?: string | null
@@ -658,6 +709,10 @@ export type Database = {
           updated_at: string
           video_url: string | null
         }[]
+      }
+      toggle_aluno_status: {
+        Args: { p_aluno_id: string; p_ativo: boolean; p_motivo?: string }
+        Returns: Json
       }
     }
     Enums: {
