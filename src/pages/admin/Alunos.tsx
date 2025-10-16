@@ -13,26 +13,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Eye, Download, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-type AlunoProfile = Tables<'profiles'> & {
-  personal: { nome: string } | null;
-  treinos_ativos: { count: number }[];
+type AlunoWithDetails = Tables<'profiles'> & {
+  personal_nome: string;
+  personal_email: string;
+  treinos_count: number;
 };
 
-type PersonalOption = {
-  id: string;
-  nome: string;
-};
-
-const SUBSCRIPTION_STATUS_OPTIONS: Enums<'subscription_status'>[] = [
-  "active", "pending", "inactive", "trialing", "past_due", "canceled"
-];
+const ITEMS_PER_PAGE = 10;
 
 export default function Alunos() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPersonal, setSelectedPersonal] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<Enums<'subscription_status'> | null>(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("nome_asc"); // 'nome_asc', 'nome_desc', 'recentes', 'antigos'
+  const [currentPage, setCurrentPage] = useState(1);
   const [adminId, setAdminId] = useState<string | null>(null); // To ensure only admin can access
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms debounce
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -47,57 +53,74 @@ export default function Alunos() {
     fetchUser();
   }, [navigate]);
 
-  const { data: personalOptions, isLoading: isLoadingPersonals, error: personalError } = useQuery<PersonalOption[]>({
-    queryKey: ["personalOptions"],
+  const { data, isLoading, error } = useQuery<{ alunos: AlunoWithDetails[], count: number }>({
+    queryKey: ["adminAllStudents", debouncedSearchTerm, sortOrder, currentPage],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, nome')
-        .eq('role', 'personal')
-        .order('nome', { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!adminId,
-  });
-
-  const { data: alunos, isLoading: isLoadingAlunos, error: alunosError } = useQuery<AlunoProfile[]>({
-    queryKey: ["adminAlunos", searchTerm, selectedPersonal, selectedStatus],
-    queryFn: async () => {
-      if (!adminId) return [];
-
+      // Por enquanto, vamos usar uma query simples sem join
       let query = supabase
-        .from('profiles')
-        .select(`
-          id,
-          nome,
-          email,
-          created_at,
-          subscription_status,
-          personal:profiles!personal_id(nome),
-          treinos_ativos:aluno_treinos!inner(count)
-        `)
-        .eq('role', 'aluno');
+        .from("profiles")
+        .select("*", { count: 'exact' })
+        .eq("role", "aluno");
 
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+      if (debouncedSearchTerm) {
+        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
       }
 
-      if (selectedPersonal) {
-        query = query.eq('personal_id', selectedPersonal);
+      switch (sortOrder) {
+        case "nome_asc":
+          query = query.order("nome", { ascending: true });
+          break;
+        case "nome_desc":
+          query = query.order("nome", { ascending: false });
+          break;
+        case "recentes":
+          query = query.order("created_at", { ascending: false });
+          break;
+        case "antigos":
+          query = query.order("created_at", { ascending: true });
+          break;
       }
 
-      if (selectedStatus) {
-        query = query.eq('subscription_status', selectedStatus);
-      }
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      query = query.range(from, to);
 
-      const { data, error } = await query.order('created_at', { ascending: false });
-
+      const { data: alunosData, count, error } = await query;
       if (error) throw error;
-      return data as AlunoProfile[];
+
+      // Buscar informações do personal para cada aluno
+      const alunosComDetalhes = await Promise.all(
+        (alunosData || []).map(async (aluno) => {
+          const { data: personal } = await supabase
+            .from("profiles")
+            .select("nome, email")
+            .eq("id", aluno.personal_id)
+            .single();
+
+          const { count: treinosCount } = await supabase
+            .from("aluno_treinos")
+            .select("*", { count: "exact", head: true })
+            .eq("aluno_id", aluno.id);
+
+          return {
+            ...aluno,
+            personal_nome: personal?.nome || "Sem Personal",
+            personal_email: personal?.email || "",
+            treinos_count: treinosCount || 0
+          };
+        })
+      );
+
+      return { alunos: alunosComDetalhes, count: count || 0 };
     },
-    enabled: !!adminId,
+    enabled: !!adminId, // Habilita a query apenas se adminId estiver definido
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
+
+  const alunos = data?.alunos || [];
+  const totalAlunos = data?.count || 0;
+  const totalPages = Math.ceil(totalAlunos / ITEMS_PER_PAGE);
 
   const getInitials = (name: string) => {
     return name
@@ -131,8 +154,8 @@ export default function Alunos() {
     const rows = alunos.map(aluno => [
       aluno.nome,
       aluno.email,
-      aluno.personal?.nome || '-',
-      aluno.treinos_ativos[0]?.count || 0,
+      aluno.personal_nome || '-',
+      aluno.treinos_count || 0,
       aluno.subscription_status || '-',
       new Date(aluno.created_at).toLocaleDateString('pt-BR')
     ]);
@@ -154,11 +177,8 @@ export default function Alunos() {
     });
   };
 
-  if (personalError) {
-    return <div className="text-destructive">Erro ao carregar opções de personal trainers: {personalError.message}</div>;
-  }
-  if (alunosError) {
-    return <div className="text-destructive">Erro ao carregar alunos: {alunosError.message}</div>;
+  if (error) {
+    return <div className="text-destructive">Erro ao carregar alunos: {error.message}</div>;
   }
 
   return (
@@ -185,35 +205,21 @@ export default function Alunos() {
             className="pl-9"
           />
         </div>
-        <Select onValueChange={(value) => setSelectedPersonal(value === "todos" ? null : value)} value={selectedPersonal || "todos"}>
+        <Select onValueChange={setSortOrder} value={sortOrder}>
           <SelectTrigger className="col-span-full md:col-span-1">
-            <SelectValue placeholder="Filtrar por Personal Trainer" />
+            <SelectValue placeholder="Ordenar por..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos os Personals</SelectItem>
-            {isLoadingPersonals ? (
-              <SelectItem value="loading" disabled>Carregando...</SelectItem>
-            ) : (
-              personalOptions?.map((personal) => (
-                <SelectItem key={personal.id} value={personal.id}>{personal.nome}</SelectItem>
-              ))
-            )}
+            <SelectItem value="nome_asc">Nome (A-Z)</SelectItem>
+            <SelectItem value="nome_desc">Nome (Z-A)</SelectItem>
+            <SelectItem value="recentes">Mais recentes</SelectItem>
+            <SelectItem value="antigos">Mais antigos</SelectItem>
           </SelectContent>
         </Select>
-        <Select onValueChange={(value) => setSelectedStatus(value === "todos" ? null : value as Enums<'subscription_status'>)} value={selectedStatus || "todos"}>
-          <SelectTrigger className="col-span-full md:col-span-1">
-            <SelectValue placeholder="Filtrar por Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os Status</SelectItem>
-            {SUBSCRIPTION_STATUS_OPTIONS.map((status) => (
-              <SelectItem key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Removido o filtro de status de assinatura por enquanto */}
       </div>
 
-      {isLoadingAlunos ? (
+      {isLoading && !data ? (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -221,7 +227,7 @@ export default function Alunos() {
                 <TableHead className="w-[50px]">Aluno</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Personal Trainer</TableHead>
-                <TableHead>Treinos Ativos</TableHead>
+                <TableHead className="text-center">Treinos Ativos</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -275,8 +281,8 @@ export default function Alunos() {
                     </div>
                   </TableCell>
                   <TableCell>{aluno.email}</TableCell>
-                  <TableCell>{aluno.personal?.nome || '-'}</TableCell>
-                  <TableCell className="text-center">{aluno.treinos_ativos[0]?.count || 0}</TableCell>
+                  <TableCell>{aluno.personal_nome || '-'}</TableCell>
+                  <TableCell className="text-center">{aluno.treinos_count || 0}</TableCell>
                   <TableCell>{aluno.subscription_status ? (aluno.subscription_status.charAt(0).toUpperCase() + aluno.subscription_status.slice(1).replace('_', ' ')) : '-'}</TableCell>
                   <TableCell>
                     {new Date(aluno.created_at).toLocaleDateString('pt-BR')}
