@@ -99,49 +99,34 @@ export default function Alunos() {
     queryFn: async () => {
       if (!personalId) return { alunos: [], count: 0 };
 
-      let query = supabase
-        .from("profiles")
-        .select(`
-          *,
-          aluno_treinos!aluno_treinos_aluno_id_fkey(count)
-        `, { count: 'exact' })
-        .eq("personal_id", personalId)
-        .eq("role", "aluno");
+      const { data, error } = await supabase.rpc('get_alunos_with_treinos', {
+        personal_id_param: personalId,
+        search_term: debouncedSearchTerm || null,
+        sort_order: sortOrder,
+        page_size: ITEMS_PER_PAGE,
+        page_number: currentPage
+      });
 
-      if (debouncedSearchTerm) {
-        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
+      if (error) {
+        console.error("Erro ao chamar RPC get_alunos_with_treinos:", error);
+        throw error;
       }
 
-      switch (sortOrder) {
-        case "nome_asc":
-          query = query.order("nome", { ascending: true });
-          break;
-        case "nome_desc":
-          query = query.order("nome", { ascending: false });
-          break;
-        case "recentes":
-          query = query.order("created_at", { ascending: false });
-          break;
-        case "antigos":
-          query = query.order("created_at", { ascending: true });
-          break;
-        default:
-          query = query.order("nome", { ascending: true });
-      }
+      const alunos = data || [];
+      const count = alunos.length > 0 ? Number(alunos[0].total_count) : 0;
 
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-      query = query.range(from, to);
-
-      const { data: alunosData, count, error } = await query;
-
-      if (error) throw error;
-      return { alunos: alunosData as AlunoWithTreinosCount[], count: count || 0 };
+      return {
+        alunos: alunos.map(a => ({
+          ...a,
+          aluno_treinos: [{ count: a.treinos_count || 0 }]
+        })),
+        count
+      };
     },
     enabled: !!personalId,
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
-    cacheTime: 10 * 60 * 1000, // Manter no cache por 10 minutos
-    placeholderData: (previousData) => previousData, // Keep previous data while loading new
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 
   // Prefetch da próxima página
@@ -155,25 +140,30 @@ export default function Alunos() {
         queryKey: ["personalStudents", personalId, debouncedSearchTerm, sortOrder, nextPage],
         queryFn: async () => {
           if (!personalId) return { alunos: [], count: 0 };
-          let query = supabase
-            .from("profiles")
-            .select(`*, aluno_treinos!aluno_treinos_aluno_id_fkey(count)`, { count: 'exact' })
-            .eq("personal_id", personalId)
-            .eq("role", "aluno");
+          
+          const { data, error } = await supabase.rpc('get_alunos_with_treinos', {
+            personal_id_param: personalId,
+            search_term: debouncedSearchTerm || null,
+            sort_order: sortOrder,
+            page_size: ITEMS_PER_PAGE,
+            page_number: nextPage
+          });
 
-          if (debouncedSearchTerm) {
-            query = query.or(`nome.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
+          if (error) {
+            console.error("Erro ao chamar RPC get_alunos_with_treinos para prefetch:", error);
+            throw error;
           }
-          switch (sortOrder) {
-            case "nome_asc": query = query.order("nome", { ascending: true }); break;
-            case "nome_desc": query = query.order("nome", { ascending: false }); break;
-            case "recentes": query = query.order("created_at", { ascending: false }); break;
-            case "antigos": query = query.order("created_at", { ascending: true }); break;
-          }
-          query = query.range(from, to);
-          const { data: alunosData, count, error } = await query;
-          if (error) throw error;
-          return { alunos: alunosData as AlunoWithTreinosCount[], count: count || 0 };
+
+          const alunos = data || [];
+          const count = alunos.length > 0 ? Number(alunos[0].total_count) : 0;
+
+          return {
+            alunos: alunos.map(a => ({
+              ...a,
+              aluno_treinos: [{ count: a.treinos_count || 0 }]
+            })),
+            count
+          };
         },
         staleTime: 5 * 60 * 1000,
         cacheTime: 10 * 60 * 1000,
