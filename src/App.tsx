@@ -30,7 +30,8 @@ import HistoricoTreinos from "./pages/aluno/HistoricoTreinos";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPersonalTrainers from "./pages/admin/PersonalTrainers";
 import AdminAlunos from "./pages/admin/Alunos";
-import AdminPlans from "./pages/admin/Plans"; // Importar a nova página de planos
+import AdminPlans from "./pages/admin/Plans";
+import AdminStatistics from "./pages/admin/AdminStatistics"; // Importar a nova página de estatísticas
 
 // Configuração do Query Client
 const queryClient = new QueryClient({
@@ -189,6 +190,13 @@ const App = () => (
               <ProtectedRoute allowedRoles={['admin']}>
                 <AuthLayout>
                   <AdminPlans />
+                </AuthLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/estatisticas" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AuthLayout>
+                  <AdminStatistics />
                 </AuthLayout>
               </ProtectedRoute>
             } />

@@ -20,7 +20,8 @@ const routeLabels: { [key: string]: string } = {
   '/admin/dashboard': 'Dashboard',
   '/admin/personal-trainers': 'Personal Trainers',
   '/admin/alunos': 'Alunos',
-  '/admin/planos': 'Planos', // Adicionado
+  '/admin/planos': 'Planos',
+  '/admin/estatisticas': 'Estatísticas', // Adicionado
 };
 
 export function useBreadcrumbs(userRole: 'admin' | 'personal' | 'aluno' | null) {

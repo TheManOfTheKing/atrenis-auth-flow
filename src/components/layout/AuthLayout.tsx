@@ -83,8 +83,8 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
         { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" },
         { icon: Users, label: "Alunos", path: "/admin/alunos" },
-        { icon: DollarSign, label: "Planos", path: "/admin/planos" }, // Novo item
-        { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" },
+        { icon: DollarSign, label: "Planos", path: "/admin/planos" },
+        { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" }, // Novo item
       ];
     } else if (userRole === "aluno") {
       return [

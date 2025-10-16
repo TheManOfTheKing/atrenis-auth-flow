@@ -517,6 +517,15 @@ export type Database = {
         }
         Returns: Json
       }
+      get_admin_summary_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          arr: number
+          mrr: number
+          total_alunos: number
+          total_personals: number
+        }[]
+      }
       get_aluno_stats: {
         Args: { aluno_uuid: string }
         Returns: {
@@ -525,6 +534,16 @@ export type Database = {
           total_execucoes: number
           treinos_ativos: number
           treinos_concluidos: number
+        }[]
+      }
+      get_expiring_subscriptions: {
+        Args: { days_ahead?: number }
+        Returns: {
+          data_vencimento: string
+          personal_id: string
+          personal_nome: string
+          plan_nome: string
+          status_assinatura: Database["public"]["Enums"]["subscription_status"]
         }[]
       }
       get_my_personal_id: {
@@ -568,6 +587,48 @@ export type Database = {
           status_assinatura: Database["public"]["Enums"]["subscription_status"]
           total_alunos: number
           total_count: number
+        }[]
+      }
+      get_personals_growth_monthly: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          ano: number
+          mes: string
+          total_personals: number
+        }[]
+      }
+      get_personals_without_active_plan: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          personal_id: string
+          personal_nome: string
+        }[]
+      }
+      get_plans_distribution_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          plan_nome: string
+          total_personals: number
+        }[]
+      }
+      get_recent_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          data_assinatura: string
+          personal_id: string
+          personal_nome: string
+          plan_nome: string
+          status_assinatura: Database["public"]["Enums"]["subscription_status"]
+        }[]
+      }
+      get_students_per_personal_top10: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          personal_id: string
+          personal_nome: string
+          total_alunos: number
         }[]
       }
       get_upcoming_appointments: {
