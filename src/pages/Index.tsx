@@ -108,7 +108,7 @@ const Index = () => {
             <div className="flex items-center gap-4">
               {/* Botão "Entrar" - Mantido apenas um e estilizado */}
               <Link to="/login">
-                <Button variant="outline" className="border-2 border-secondary-blue text-white hover:bg-secondary-blue hover:text-white hidden sm:inline-flex">
+                <Button variant="outline" className="border-2 border-secondary-blue bg-transparent text-white hover:bg-secondary-blue hover:text-white hidden sm:inline-flex">
                   Entrar
                 </Button>
               </Link>
