@@ -81,6 +81,8 @@ export default function AdminDashboard() {
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ["adminStats"],
     queryFn: fetchAdminStats,
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
+    cacheTime: 5 * 60 * 1000, // Manter no cache por 5 minutos
   });
 
   if (error) {

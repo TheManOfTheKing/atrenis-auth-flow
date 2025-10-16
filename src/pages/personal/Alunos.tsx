@@ -139,8 +139,48 @@ export default function Alunos() {
       return { alunos: alunosData as AlunoWithTreinosCount[], count: count || 0 };
     },
     enabled: !!personalId,
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    cacheTime: 10 * 60 * 1000, // Manter no cache por 10 minutos
     placeholderData: (previousData) => previousData, // Keep previous data while loading new
   });
+
+  // Prefetch da próxima página
+  useEffect(() => {
+    if (currentPage < totalPages) {
+      const nextPage = currentPage + 1;
+      const from = (nextPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      queryClient.prefetchQuery({
+        queryKey: ["personalStudents", personalId, debouncedSearchTerm, sortOrder, nextPage],
+        queryFn: async () => {
+          if (!personalId) return { alunos: [], count: 0 };
+          let query = supabase
+            .from("profiles")
+            .select(`*, aluno_treinos!aluno_treinos_aluno_id_fkey(count)`, { count: 'exact' })
+            .eq("personal_id", personalId)
+            .eq("role", "aluno");
+
+          if (debouncedSearchTerm) {
+            query = query.or(`nome.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`);
+          }
+          switch (sortOrder) {
+            case "nome_asc": query = query.order("nome", { ascending: true }); break;
+            case "nome_desc": query = query.order("nome", { ascending: false }); break;
+            case "recentes": query = query.order("created_at", { ascending: false }); break;
+            case "antigos": query = query.order("created_at", { ascending: true }); break;
+          }
+          query = query.range(from, to);
+          const { data: alunosData, count, error } = await query;
+          if (error) throw error;
+          return { alunos: alunosData as AlunoWithTreinosCount[], count: count || 0 };
+        },
+        staleTime: 5 * 60 * 1000,
+        cacheTime: 10 * 60 * 1000,
+      });
+    }
+  }, [currentPage, totalPages, personalId, debouncedSearchTerm, sortOrder, queryClient]);
+
 
   const alunos = data?.alunos || [];
   const totalAlunos = data?.count || 0;

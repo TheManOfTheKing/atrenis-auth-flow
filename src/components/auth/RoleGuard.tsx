@@ -28,8 +28,8 @@ export default function RoleGuard({ allowedRoles, children, fallback = null }: R
       }
       return role as UserRole;
     },
-    staleTime: 5 * 60 * 1000, // Cache a role por 5 minutos
-    cacheTime: 10 * 60 * 1000, // Manter no cache por 10 minutos
+    staleTime: 10 * 60 * 1000, // Cache por 10 minutos
+    cacheTime: 15 * 60 * 1000, // Manter no cache por 15 minutos
   });
 
   if (isLoading) {

@@ -69,6 +69,8 @@ export default function Exercicios() {
       return data;
     },
     enabled: !!personalId,
+    staleTime: 10 * 60 * 1000, // Cache por 10 minutos
+    cacheTime: 15 * 60 * 1000, // Manter no cache por 15 minutos
   });
 
   const handleEdit = (id: string) => {
