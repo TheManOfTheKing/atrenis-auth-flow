@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Download, DollarSign, Edit, ListChecks, PlusCircle, Power, Trash2, MoreHorizontal, CheckCircle2, XCircle } from "lucide-react";
+import { Search, Eye, Download, DollarSign, Edit, ListChecks, PlusCircle, Power, Trash2, MoreHorizontal, CheckCircle2, XCircle, CreditCard } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +118,38 @@ export default function PersonalTrainers() {
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const calculateCurrentPlanValue = (personal: PersonalTrainerAdminView) => {
+    if (!personal.plan_id || personal.status_assinatura === 'pendente' || personal.status_assinatura === 'cancelada') return 0;
+
+    const plan = allPlans?.find(p => p.id === personal.plan_id);
+    if (!plan) return 0;
+
+    let baseValue = 0;
+    if (personal.plano_vitalicio || plan.tipo === 'vitalicio') {
+      return 0; // Vitalício não tem valor mensal/anual recorrente
+    } else if (personal.data_assinatura && personal.data_vencimento) {
+      const startDate = new Date(personal.data_assinatura);
+      const endDate = new Date(personal.data_vencimento);
+      const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+
+      if (diffMonths <= 1) { // Assume mensal
+        baseValue = plan.preco_mensal;
+      } else { // Assume anual
+        baseValue = plan.preco_anual || (plan.preco_mensal * 12);
+      }
+    } else {
+      // Fallback if dates are not clear, assume monthly
+      baseValue = plan.preco_mensal;
+    }
+
+    const discountAmount = (baseValue * (personal.desconto_percentual || 0)) / 100;
+    return baseValue - discountAmount;
+  };
+
   const handleExportCSV = () => {
     if (!personalTrainers || personalTrainers.length === 0) {
       toast({
@@ -129,19 +161,22 @@ export default function PersonalTrainers() {
     }
 
     const headers = [
-      'Nome', 'Email', 'CREF', 'Plano Atual', 'Status Assinatura', 'Desconto (%)',
-      'Data Assinatura', 'Data Vencimento', 'Alunos Ativos', 'Data de Cadastro'
+      'Nome', 'Email', 'CREF', 'Plano Atual', 'Tipo Plano', 'Status Assinatura', 'Desconto (%)',
+      'Valor Mensal/Anual', 'Data Assinatura', 'Data Vencimento', 'Alunos Ativos', 'Limite Alunos', 'Data de Cadastro'
     ];
     const rows = personalTrainers.map(personal => [
       personal.nome,
       personal.email,
       personal.cref || '-',
       personal.plan_nome || 'Nenhum',
+      allPlans?.find(p => p.id === personal.plan_id)?.tipo || '-',
       personal.status_assinatura || 'Pendente',
       personal.desconto_percentual || 0,
+      formatCurrency(calculateCurrentPlanValue(personal)),
       personal.data_assinatura ? format(new Date(personal.data_assinatura), "dd/MM/yyyy", { locale: ptBR }) : '-',
-      personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-',
+      personal.plano_vitalicio ? 'Vitalício' : (personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-'),
       personal.total_alunos || 0,
+      personal.plan_max_alunos === 0 ? 'Ilimitado' : personal.plan_max_alunos || '-',
       format(new Date(personal.created_at), "dd/MM/yyyy", { locale: ptBR })
     ]);
 
@@ -246,9 +281,9 @@ export default function PersonalTrainers() {
                 <TableHead className="w-[50px]">Personal</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Plano Atual</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Alunos</TableHead>
+                <TableHead>Valor Pago</TableHead>
                 <TableHead>Vencimento</TableHead>
+                <TableHead>Alunos</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -264,8 +299,8 @@ export default function PersonalTrainers() {
                   <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
                 </TableRow>
               ))}
@@ -280,9 +315,9 @@ export default function PersonalTrainers() {
                 <TableHead className="w-[50px]">Personal</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Plano Atual</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Alunos</TableHead>
+                <TableHead>Valor Pago</TableHead>
                 <TableHead>Vencimento</TableHead>
+                <TableHead>Alunos</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -301,34 +336,45 @@ export default function PersonalTrainers() {
                   </TableCell>
                   <TableCell>{personal.email}</TableCell>
                   <TableCell>
-                    {personal.plan_nome || <Badge variant="outline">Nenhum</Badge>}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{personal.plan_nome || "Sem Plano"}</span>
+                      {personal.plan_id && (
+                        <div className="flex items-center gap-1">
+                          <Badge
+                            className={`
+                              ${allPlans?.find(p => p.id === personal.plan_id)?.tipo === 'publico' && 'bg-secondary-blue text-white'}
+                              ${allPlans?.find(p => p.id === personal.plan_id)?.tipo === 'vitalicio' && 'bg-primary-yellow text-primary-dark'}
+                            `}
+                          >
+                            {allPlans?.find(p => p.id === personal.plan_id)?.tipo?.charAt(0).toUpperCase() + allPlans?.find(p => p.id === personal.plan_id)?.tipo?.slice(1) || 'N/A'}
+                          </Badge>
+                          <Badge
+                            className={`
+                              ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                              ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
+                              ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
+                              ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
+                              ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
+                              ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
+                            `}
+                          >
+                            {personal.status_assinatura?.charAt(0).toUpperCase() + personal.status_assinatura?.slice(1) || 'N/A'}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {personal.plano_vitalicio ? 'Vitalício' : formatCurrency(calculateCurrentPlanValue(personal))}
                     {personal.desconto_percentual && personal.desconto_percentual > 0 && (
-                      <Badge variant="secondary" className="ml-2">{personal.desconto_percentual}% OFF</Badge>
+                      <span className="text-xs text-muted-foreground ml-1">({personal.desconto_percentual}% OFF)</span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {personal.status_assinatura ? (
-                      <Badge
-                        className={`
-                          ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
-                          ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
-                          ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
-                          ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
-                          ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
-                          ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
-                        `}
-                      >
-                        {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">Pendente</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {personal.total_alunos} {personal.plan_max_alunos !== null && personal.plan_max_alunos > 0 && ` / ${personal.plan_max_alunos}`}
                   </TableCell>
                   <TableCell>
                     {personal.plano_vitalicio ? 'Vitalício' : (personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-')}
+                  </TableCell>
+                  <TableCell>
+                    {personal.total_alunos} {personal.plan_max_alunos !== null && personal.plan_max_alunos > 0 && ` / ${personal.plan_max_alunos}`}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -343,10 +389,10 @@ export default function PersonalTrainers() {
                           <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEditPersonal(personal)}>
-                          <Edit className="mr-2 h-4 w-4" /> Editar
+                          <Edit className="mr-2 h-4 w-4" /> Editar Dados
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleAssignPlan(personal)}>
-                          <ListChecks className="mr-2 h-4 w-4" /> Atribuir Plano
+                          <CreditCard className="mr-2 h-4 w-4" /> Gerenciar Plano
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

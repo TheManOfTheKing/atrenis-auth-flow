@@ -204,6 +204,8 @@ export const assignPlanSchema = z.object({
   periodo: z.enum(['mensal', 'anual', 'vitalicio'], { // Adicionado 'vitalicio'
     errorMap: () => ({ message: "Selecione um período de assinatura" }),
   }),
+  data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de início inválida. Use o formato YYYY-MM-DD'),
+  observacoes: z.string().max(500, 'Observações muito longas').optional().or(z.literal('')),
 });
 
 // Schema para criação/edição de personal trainer pelo admin

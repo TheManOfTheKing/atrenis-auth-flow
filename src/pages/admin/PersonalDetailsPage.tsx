@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Mail, Phone, CalendarDays, Target, User, Dumbbell, Clock, Edit, Power, Trash2, ArrowLeft, ListChecks,
-  Users as UsersIcon, Activity, TrendingUp,
+  Users as UsersIcon, Activity, TrendingUp, CreditCard,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -21,6 +21,7 @@ import AssignPlanToPersonalDialog from "@/components/admin/AssignPlanToPersonalD
 import PersonalFormDialog from "@/components/admin/PersonalFormDialog";
 import PersonalStatusDialogAdmin from "@/components/admin/PersonalStatusDialogAdmin";
 import { useDeletePersonalByAdmin } from "@/hooks/usePersonalAdminCrud";
+import { usePlans } from "@/hooks/usePlans"; // Para obter detalhes do plano
 
 export default function PersonalDetailsPage() {
   const { id: personalId } = useParams<{ id: string }>();
@@ -45,6 +46,7 @@ export default function PersonalDetailsPage() {
   }, [navigate]);
 
   const { data: personal, isLoading: isLoadingPersonal, error: personalError } = usePersonalDetailsAdmin(personalId);
+  const { data: allPlans } = usePlans({ ativo: null }); // Fetch all plans to get plan type
   // NOTE: usePersonalStats uses auth.uid(), so it will fetch stats for the *admin* user, not the personal being viewed.
   // A new RPC function would be needed to fetch stats for a specific personal by ID.
   // For now, we'll use placeholders for these stats.
@@ -87,6 +89,38 @@ export default function PersonalDetailsPage() {
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const calculateCurrentPlanValue = (personal: PersonalTrainerAdminView) => {
+    if (!personal.plan_id || personal.status_assinatura === 'pendente' || personal.status_assinatura === 'cancelada') return 0;
+
+    const plan = allPlans?.find(p => p.id === personal.plan_id);
+    if (!plan) return 0;
+
+    let baseValue = 0;
+    if (personal.plano_vitalicio || plan.tipo === 'vitalicio') {
+      return 0; // Vitalício não tem valor mensal/anual recorrente
+    } else if (personal.data_assinatura && personal.data_vencimento) {
+      const startDate = new Date(personal.data_assinatura);
+      const endDate = new Date(personal.data_vencimento);
+      const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+
+      if (diffMonths <= 1) { // Assume mensal
+        baseValue = plan.preco_mensal;
+      } else { // Assume anual
+        baseValue = plan.preco_anual || (plan.preco_mensal * 12);
+      }
+    } else {
+      // Fallback if dates are not clear, assume monthly
+      baseValue = plan.preco_mensal;
+    }
+
+    const discountAmount = (baseValue * (personal.desconto_percentual || 0)) / 100;
+    return baseValue - discountAmount;
+  };
+
   if (personalError) {
     return <div className="text-destructive">Erro ao carregar detalhes do personal: {personalError.message}</div>;
   }
@@ -105,6 +139,8 @@ export default function PersonalDetailsPage() {
     );
   }
 
+  const currentPlanType = allPlans?.find(p => p.id === personal.plan_id)?.tipo;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -114,7 +150,7 @@ export default function PersonalDetailsPage() {
         <h1 className="text-3xl font-bold">Detalhes do Personal Trainer</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleEdit}>
-            <Edit className="h-4 w-4 mr-1" /> Editar
+            <Edit className="h-4 w-4 mr-1" /> Editar Dados
           </Button>
           <Button
             variant={personal.ativo ? 'destructive' : 'default'}
@@ -175,32 +211,46 @@ export default function PersonalDetailsPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Plano de Assinatura</CardTitle>
           <Button variant="outline" size="sm" onClick={handleAssignPlan}>
-            <ListChecks className="h-4 w-4 mr-1" /> Atribuir/Editar Plano
+            <CreditCard className="h-4 w-4 mr-1" /> Gerenciar Plano
           </Button>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div>
             <p className="text-sm font-medium text-muted-foreground">Plano Atual:</p>
             <p className="text-lg font-semibold">{personal.plan_nome || "Nenhum Plano Atribuído"}</p>
+            {personal.plan_id && (
+              <div className="flex items-center gap-1 mt-1">
+                <Badge
+                  className={`
+                    ${currentPlanType === 'publico' && 'bg-secondary-blue text-white'}
+                    ${currentPlanType === 'vitalicio' && 'bg-primary-yellow text-primary-dark'}
+                  `}
+                >
+                  {currentPlanType?.charAt(0).toUpperCase() + currentPlanType?.slice(1) || 'N/A'}
+                </Badge>
+                <Badge
+                  className={`
+                    ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                    ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
+                    ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
+                    ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
+                    ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
+                    ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
+                  `}
+                >
+                  {personal.status_assinatura?.charAt(0).toUpperCase() + personal.status_assinatura?.slice(1) || 'N/A'}
+                </Badge>
+              </div>
+            )}
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Status da Assinatura:</p>
-            {personal.status_assinatura ? (
-              <Badge
-                className={`
-                  ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
-                  ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
-                  ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
-                  ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
-                  ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
-                  ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
-                `}
-              >
-                {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
-              </Badge>
-            ) : (
-              <Badge variant="outline">Pendente</Badge>
-            )}
+            <p className="text-sm font-medium text-muted-foreground">Valor Mensal/Anual:</p>
+            <p className="text-lg font-semibold">
+              {personal.plano_vitalicio ? 'Vitalício' : formatCurrency(calculateCurrentPlanValue(personal))}
+              {personal.desconto_percentual && personal.desconto_percentual > 0 && (
+                <span className="text-sm text-muted-foreground ml-1">({personal.desconto_percentual}% OFF)</span>
+              )}
+            </p>
           </div>
           {personal.data_assinatura && (
             <div>
@@ -212,12 +262,6 @@ export default function PersonalDetailsPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Data de Vencimento:</p>
               <p>{personal.plano_vitalicio ? 'Vitalício' : format(new Date(personal.data_vencimento), "PPP", { locale: ptBR })}</p>
-            </div>
-          )}
-          {personal.desconto_percentual && personal.desconto_percentual > 0 && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Desconto Aplicado:</p>
-              <p>{personal.desconto_percentual}%</p>
             </div>
           )}
           <div>

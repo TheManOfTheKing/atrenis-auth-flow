@@ -261,6 +261,85 @@ export type Database = {
           },
         ]
       }
+      plan_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          data_fim: string | null
+          data_inicio: string
+          desconto_percentual: number | null
+          id: string
+          periodo: string
+          personal_id: string
+          plan_id: string | null
+          plan_nome: string
+          preco_anual_na_epoca: number | null
+          preco_mensal_na_epoca: number | null
+          status: string
+          valor_final_anual: number | null
+          valor_final_mensal: number | null
+          motivo_cancelamento: string | null
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          desconto_percentual?: number | null
+          id?: string
+          periodo: string
+          personal_id: string
+          plan_id?: string | null
+          plan_nome: string
+          preco_anual_na_epoca?: number | null
+          preco_mensal_na_epoca?: number | null
+          status: string
+          valor_final_anual?: number | null
+          valor_final_mensal?: number | null
+          motivo_cancelamento?: string | null
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          desconto_percentual?: number | null
+          id?: string
+          periodo?: string
+          personal_id?: string
+          plan_id?: string | null
+          plan_nome?: string
+          preco_anual_na_epoca?: number | null
+          preco_mensal_na_epoca?: number | null
+          status?: string
+          valor_final_anual?: number | null
+          valor_final_mensal?: number | null
+          motivo_cancelamento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_history_personal_id_fkey"
+            columns: ["personal_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_history_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           ativo: boolean | null
@@ -568,6 +647,17 @@ export type Database = {
           p_plan_id: string
           p_desconto_percentual: number
           p_periodo: string
+          p_data_inicio: string
+          p_admin_id: string
+        }
+        Returns: Json
+      }
+      cancel_plan_for_personal: {
+        Args: {
+          p_personal_id: string
+          p_motivo_cancelamento?: string
+          p_cancel_immediately?: boolean
+          p_admin_id: string
         }
         Returns: Json
       }
@@ -611,6 +701,27 @@ export type Database = {
       get_my_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_personal_plan_history: {
+        Args: { p_personal_id: string }
+        Returns: {
+          changed_at: string | null
+          changed_by: string | null
+          data_fim: string | null
+          data_inicio: string
+          desconto_percentual: number | null
+          id: string
+          periodo: string
+          personal_id: string
+          plan_id: string | null
+          plan_nome: string
+          preco_anual_na_epoca: number | null
+          preco_mensal_na_epoca: number | null
+          status: string
+          valor_final_anual: number | null
+          valor_final_mensal: number | null
+          motivo_cancelamento: string | null
+        }[]
       }
       get_personal_stats: {
         Args: { personal_uuid: string }
