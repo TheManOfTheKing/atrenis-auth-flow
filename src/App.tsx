@@ -19,9 +19,11 @@ import NovoExercicio from "./pages/personal/NovoExercicio";
 import Treinos from "./pages/personal/Treinos";
 import NovoTreino from "./pages/personal/NovoTreino";
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
+import ExecutarTreino from "./pages/aluno/ExecutarTreino"; // Importar nova página
+import HistoricoTreinos from "./pages/aluno/HistoricoTreinos"; // Importar nova página
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminPersonalTrainers from "./pages/admin/PersonalTrainers"; // Importar nova página
-import AdminAlunos from "./pages/admin/Alunos"; // Importar nova página
+import AdminPersonalTrainers from "./pages/admin/PersonalTrainers";
+import AdminAlunos from "./pages/admin/Alunos";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +99,20 @@ const App = () => (
               </AuthLayout>
             </ProtectedRoute>
           } />
+          <Route path="/aluno/treino/:alunoTreinoId" element={
+            <ProtectedRoute allowedRoles={['aluno']}>
+              <AuthLayout>
+                <ExecutarTreino /> {/* Nova rota para execução de treino */}
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/aluno/historico" element={
+            <ProtectedRoute allowedRoles={['aluno']}>
+              <AuthLayout>
+                <HistoricoTreinos /> {/* Nova rota para histórico de treinos */}
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={
@@ -109,14 +125,14 @@ const App = () => (
           <Route path="/admin/personal-trainers" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AuthLayout>
-                <AdminPersonalTrainers /> {/* Nova rota */}
+                <AdminPersonalTrainers />
               </AuthLayout>
             </ProtectedRoute>
           } />
           <Route path="/admin/alunos" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AuthLayout>
-                <AdminAlunos /> {/* Nova rota */}
+                <AdminAlunos />
               </AuthLayout>
             </ProtectedRoute>
           } />

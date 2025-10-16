@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3 } from "lucide-react";
+import { LogOut, Menu, X, LayoutDashboard, Users, Dumbbell, ListChecks, BarChart3, History } from "lucide-react"; // Adicionado History
 
 type UserRole = "admin" | "personal" | "aluno";
 
@@ -64,9 +64,12 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     { icon: ListChecks, label: "Exercícios", path: "/personal/exercicios" },
   ] : userRole === "admin" ? [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
-    { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" }, // Novo link
-    { icon: Users, label: "Alunos", path: "/admin/alunos" }, // Novo link
-    { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" }, // Manter ou ajustar conforme necessidade
+    { icon: Users, label: "Personal Trainers", path: "/admin/personal-trainers" },
+    { icon: Users, label: "Alunos", path: "/admin/alunos" },
+    { icon: BarChart3, label: "Estatísticas", path: "/admin/estatisticas" },
+  ] : userRole === "aluno" ? [ // Adicionado navegação para aluno
+    { icon: LayoutDashboard, label: "Dashboard", path: "/aluno/dashboard" },
+    { icon: History, label: "Histórico de Treinos", path: "/aluno/historico" },
   ] : [];
 
   return (
@@ -75,7 +78,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <header className="sticky top-0 z-50 w-full border-b bg-card">
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            {(userRole === "personal" || userRole === "admin") && (
+            {(userRole === "personal" || userRole === "admin" || userRole === "aluno") && ( // Habilitar menu para aluno também
               <Button
                 variant="ghost"
                 size="icon"
@@ -105,8 +108,8 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       </header>
 
       <div className="flex">
-        {/* Sidebar - apenas para personal e admin */}
-        {(userRole === "personal" || userRole === "admin") && (
+        {/* Sidebar - apenas para personal, admin e aluno */}
+        {(userRole === "personal" || userRole === "admin" || userRole === "aluno") && (
           <>
             {/* Mobile Sidebar */}
             {sidebarOpen && (
