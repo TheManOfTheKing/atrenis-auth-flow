@@ -39,7 +39,7 @@ export function usePersonalStudents(personalId: string | null) {
         .from("profiles")
         .select(`
           *,
-          aluno_treinos(count)
+          aluno_treinos!aluno_id(count)
         `, { count: 'exact' })
         .eq("personal_id", personalId)
         .eq("role", "aluno");
@@ -98,7 +98,7 @@ export function usePersonalStudents(personalId: string | null) {
             .from("profiles")
             .select(`
               *,
-              aluno_treinos(count)
+              aluno_treinos!aluno_id(count)
             `, { count: 'exact' })
             .eq("personal_id", personalId)
             .eq("role", "aluno");
