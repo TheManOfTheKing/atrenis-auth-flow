@@ -16,9 +16,13 @@ import {
   Instagram,
   Facebook,
   Linkedin,
-  Youtube
+  Youtube,
+  Star // Adicionado import para o ícone Star
 } from "lucide-react";
 import { useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Adicionado import para Avatar
+import { supabase } from "@/integrations/supabase/client"; // Adicionado import para Supabase
+import { toast } from "@/hooks/use-toast"; // Adicionado import para toast
 
 const Index = () => {
   const [email, setEmail] = useState("");
@@ -27,6 +31,48 @@ const Index = () => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Por favor, digite seu email.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email });
+
+      if (error) {
+        if (error.code === '23505') { // Unique violation
+          toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Este email já está cadastrado!",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Sucesso!",
+          description: "Email cadastrado com sucesso! Em breve você receberá nossas novidades.",
+        });
+        setEmail(""); // Limpa o campo de email
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao cadastrar",
+        description: error.message,
+      });
     }
   };
 
@@ -51,14 +97,18 @@ const Index = () => {
               <button onClick={() => scrollToSection("planos")} className="text-white hover:text-primary-yellow transition-colors">
                 Planos
               </button>
-              <button onClick={() => scrollToSection("newsletter")} className="text-white hover:text-primary-yellow transition-colors">
+              <button onClick={() => scrollToSection("depoimentos")} className="text-white hover:text-primary-yellow transition-colors">
+                Depoimentos
+              </button>
+              <button onClick={() => scrollToSection("contato")} className="text-white hover:text-primary-yellow transition-colors">
                 Contato
               </button>
             </nav>
 
             <div className="flex items-center gap-4">
+              {/* Botão "Entrar" - Mantido apenas um e estilizado */}
               <Link to="/login">
-                <Button variant="outline" className="border-secondary-red text-white hover:bg-secondary-red hover:text-white hidden sm:inline-flex">
+                <Button variant="outline" className="border-2 border-secondary-blue text-white hover:bg-secondary-blue hover:text-white hidden sm:inline-flex">
                   Entrar
                 </Button>
               </Link>
@@ -78,13 +128,13 @@ const Index = () => {
       {/* Hero Section */}
       <section className="bg-primary-dark pt-32 pb-20 px-4">
         <div className="container mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"> {/* Ajustado para responsividade */}
             {/* Left Column */}
-            <div>
+            <div className="order-2 lg:order-1"> {/* Ajustado para responsividade */}
               <p className="text-primary-yellow text-sm font-semibold uppercase tracking-[0.2em] mb-4">
                 SISTEMA COMPLETO DE GESTÃO
               </p>
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black leading-[1.1] mb-6">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black leading-tight mb-6"> {/* Ajustado para responsividade */}
                 <span className="text-primary-yellow">POTENCIALIZE</span>{" "}
                 <span className="text-white">SEU NEGÓCIO</span>
                 <br />
@@ -105,10 +155,11 @@ const Index = () => {
                 >
                   Comece Agora <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
+                {/* Botão "Como funciona" corrigido */}
                 <Button 
                   onClick={() => scrollToSection("como-funciona")}
                   variant="outline" 
-                  className="border-2 border-secondary-red text-white hover:bg-secondary-red hover:text-white px-8 py-6 text-lg h-auto"
+                  className="border-2 border-secondary-red text-white bg-transparent hover:bg-secondary-red hover:text-white px-8 py-6 text-lg h-auto"
                 >
                   <Play className="mr-2 h-5 w-5" /> Como funciona
                 </Button>
@@ -116,7 +167,7 @@ const Index = () => {
             </div>
 
             {/* Right Column */}
-            <div className="relative">
+            <div className="relative order-1 lg:order-2"> {/* Ajustado para responsividade */}
               <div className="bg-gradient-to-br from-secondary-blue/20 to-secondary-green/20 rounded-xl border-2 border-secondary-blue p-8 shadow-2xl shadow-secondary-blue/20">
                 <img 
                   src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=800&q=80" 
@@ -430,8 +481,94 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section id="depoimentos" className="py-20 bg-white px-4">
+        <div className="container mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-4">
+            O Que Nossos <span className="text-primary-yellow">Clientes</span> Dizem
+          </h2>
+          <p className="text-center text-gray-600 mb-12">
+            Depoimentos reais de personal trainers que transformaram seus negócios
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Depoimento 1 */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4">
+                  "O Atrenis revolucionou minha forma de trabalhar. Agora consigo gerenciar 
+                  50 alunos com facilidade e ainda sobra tempo para focar no atendimento."
+                </p>
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>MC</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">Maria Clara</p>
+                    <p className="text-sm text-gray-500">Personal Trainer - SP</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Depoimento 2 */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4">
+                  "Aumentei minha receita em 40% no primeiro trimestre usando o Atrenis. 
+                  A gestão financeira integrada fez toda a diferença!"
+                </p>
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>RS</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">Roberto Silva</p>
+                    <p className="text-sm text-gray-500">Personal Trainer - RJ</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Depoimento 3 */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4">
+                  "Interface super intuitiva! Meus alunos adoram acompanhar os treinos 
+                  pelo app. Profissionalismo total."
+                </p>
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>AF</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">Ana Ferreira</p>
+                    <p className="text-sm text-gray-500">Personal Trainer - MG</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Newsletter/CTA Section */}
-      <section id="newsletter" className="bg-primary-dark py-20 px-4 border-t border-white/10">
+      <section id="contato" className="bg-primary-dark py-20 px-4 border-t border-white/10">
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-primary-yellow">JUNTE-SE</span>{" "}
@@ -440,7 +577,7 @@ const Index = () => {
           <p className="text-lg text-gray-400 mb-8">
             Receba dicas exclusivas, novidades e conteúdos sobre gestão fitness
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+          <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
             <Input 
               type="email" 
               placeholder="Seu melhor email"
@@ -448,10 +585,10 @@ const Index = () => {
               onChange={(e) => setEmail(e.target.value)}
               className="bg-white border-none h-12"
             />
-            <Button className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold h-12 px-8">
+            <Button type="submit" className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold h-12 px-8">
               Inscrever-se
             </Button>
-          </div>
+          </form>
         </div>
       </section>
 
@@ -471,10 +608,10 @@ const Index = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">Links</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Sobre</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Funcionalidades</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Preços</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Blog</a></li>
+                <li><button onClick={() => scrollToSection("beneficios")} className="text-gray-400 hover:text-primary-yellow text-sm">Sobre</button></li>
+                <li><button onClick={() => scrollToSection("como-funciona")} className="text-gray-400 hover:text-primary-yellow text-sm">Funcionalidades</button></li>
+                <li><button onClick={() => scrollToSection("planos")} className="text-gray-400 hover:text-primary-yellow text-sm">Preços</button></li>
+                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Blog</a></li> {/* Mantido como # para exemplo */}
               </ul>
             </div>
 
@@ -482,10 +619,10 @@ const Index = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">Suporte</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">FAQ</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Contato</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Termos de Uso</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Privacidade</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">FAQ</a></li> {/* Mantido como # para exemplo */}
+                <li><button onClick={() => scrollToSection("contato")} className="text-gray-400 hover:text-primary-yellow text-sm">Contato</button></li>
+                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Termos de Uso</a></li> {/* Mantido como # para exemplo */}
+                <li><a href="#" className="text-gray-400 hover:text-primary-yellow text-sm">Privacidade</a></li> {/* Mantido como # para exemplo */}
               </ul>
             </div>
 
