@@ -123,10 +123,13 @@ export default function Login() {
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>
 
+              <p className="text-sm text-center text-muted-foreground mt-4">
+                Aluno? Use o email e senha fornecidos pelo seu personal trainer.
+              </p>
               <p className="text-sm text-center text-muted-foreground">
                 Não tem uma conta?{" "}
                 <Link to="/signup" className="text-primary hover:underline">
-                  Cadastre-se
+                  Cadastre-se como Personal Trainer
                 </Link>
               </p>
             </form>

@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const signupSchema = z.object({
@@ -16,7 +15,8 @@ const signupSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
   confirmPassword: z.string(),
-  tipo: z.enum(["personal", "aluno"], { required_error: "Selecione o tipo de conta" }),
+  cref: z.string().optional(),
+  telefone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -35,6 +35,8 @@ export default function Signup() {
       email: "",
       password: "",
       confirmPassword: "",
+      cref: "",
+      telefone: "",
     },
   });
 
@@ -47,8 +49,9 @@ export default function Signup() {
         options: {
           data: {
             nome: data.nome,
-            role: data.tipo,
-            personal_id: null,
+            role: 'personal', // Hardcoded para 'personal'
+            cref: data.cref || null,
+            telefone: data.telefone || null,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -80,7 +83,7 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Criar Conta</CardTitle>
-          <CardDescription>Cadastre-se no Atrenis</CardDescription>
+          <CardDescription>Cadastre-se no Atrenis como Personal Trainer</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -115,21 +118,27 @@ export default function Signup() {
 
               <FormField
                 control={form.control}
-                name="tipo"
+                name="cref"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Conta</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="personal">Personal Trainer</SelectItem>
-                        <SelectItem value="aluno">Aluno</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>CREF (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Seu número CREF" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="telefone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="(XX) XXXXX-XXXX" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -167,6 +176,9 @@ export default function Signup() {
                 {isLoading ? "Cadastrando..." : "Criar Conta"}
               </Button>
 
+              <p className="text-sm text-center text-muted-foreground mt-4">
+                Você é um aluno? Seu personal trainer criará sua conta e fornecerá suas credenciais de acesso.
+              </p>
               <p className="text-sm text-center text-muted-foreground">
                 Já tem uma conta?{" "}
                 <Link to="/login" className="text-primary hover:underline">
