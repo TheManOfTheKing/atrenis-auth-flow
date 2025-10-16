@@ -2,14 +2,15 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
 // Helper para validação de email único
-export const validateUniqueEmail = async (email: string) => {
+export const validateUniqueEmail = async (email: string, currentUserId?: string) => {
   const { data } = await supabase
     .from('profiles')
     .select('id') // Apenas precisamos saber se existe
     .eq('email', email.toLowerCase())
     .single();
   
-  return !data; // Retorna true se o email NÃO existir (ou seja, é único)
+  // Se data existe e o ID é diferente do usuário atual (em caso de edição), então não é único
+  return !data || (currentUserId && data.id === currentUserId);
 };
 
 // Schema para validação de senha
@@ -27,7 +28,7 @@ export const alunoSchema = z.object({
   email: z.string()
     .email('Email inválido')
     .toLowerCase()
-    .refine(validateUniqueEmail, {
+    .refine(async (email) => await validateUniqueEmail(email), {
       message: "Este email já está cadastrado.",
     }),
   telefone: z.string()
@@ -174,4 +175,52 @@ export const assignPlanSchema = z.object({
   periodo: z.enum(['mensal', 'anual'], {
     errorMap: () => ({ message: "Selecione um período de assinatura" }),
   }),
+});
+
+// Schema para criação/edição de personal trainer pelo admin
+export const personalAdminSchema = z.object({
+  id: z.string().uuid().optional(), // Apenas para edição
+  nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
+  email: z.string().email("Email inválido").toLowerCase(),
+  telefone: z.string().optional().or(z.literal('')),
+  cref: z.string().optional().refine((cref) => {
+    if (!cref) return true;
+    return /^CREF \d{6}-[A-Z]{1}\/[A-Z]{2}$/.test(cref);
+  }, {
+    message: "Formato do CREF inválido (ex: CREF 123456-G/SP)",
+  }).or(z.literal('')),
+  planId: z.string().uuid().optional().or(z.literal('')), // Opcional para criação, pode ser atribuído depois
+  desconto_percentual: z.coerce.number()
+    .min(0, 'Desconto não pode ser negativo')
+    .max(100, 'Desconto não pode ser maior que 100%')
+    .default(0),
+  periodo: z.enum(['mensal', 'anual', 'none'], {
+    errorMap: () => ({ message: "Selecione um período de assinatura" }),
+  }).default('none'),
+}).superRefine(async (data, ctx) => {
+  // Validação de email único para criação e edição
+  const isEmailUnique = await validateUniqueEmail(data.email, data.id);
+  if (!isEmailUnique) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Este email já está cadastrado.",
+      path: ["email"],
+    });
+  }
+
+  // Validação de plano e período
+  if (data.planId && data.periodo === 'none') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Se um plano for selecionado, o período é obrigatório.",
+      path: ["periodo"],
+    });
+  }
+  if (!data.planId && data.periodo !== 'none') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Se um período for selecionado, o plano é obrigatório.",
+      path: ["planId"],
+    });
+  }
 });

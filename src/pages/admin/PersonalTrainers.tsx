@@ -8,18 +8,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Download, DollarSign, Edit, ListChecks } from "lucide-react";
+import { Search, Eye, Download, DollarSign, Edit, ListChecks, PlusCircle, Power, Trash2, MoreHorizontal, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 // Novos hooks e componentes
 import { useAdminPersonalTrainers, PersonalTrainerAdminView } from "@/hooks/useAdminPersonalTrainers";
 import { usePlans } from "@/hooks/usePlans"; // Para popular o filtro de planos
+import { useDeletePersonalByAdmin } from "@/hooks/usePersonalAdminCrud";
 import AssignPlanToPersonalDialog from "@/components/admin/AssignPlanToPersonalDialog";
 import AlunosPagination from "@/components/personal/AlunosPagination"; // Reutilizando o componente de paginação
+import PersonalFormDialog from "@/components/admin/PersonalFormDialog";
+import PersonalStatusDialogAdmin from "@/components/admin/PersonalStatusDialogAdmin";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -34,6 +46,13 @@ export default function PersonalTrainers() {
 
   const [isAssignPlanDialogOpen, setIsAssignPlanDialogOpen] = useState(false);
   const [selectedPersonalForPlan, setSelectedPersonalForPlan] = useState<PersonalTrainerAdminView | null>(null);
+
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false); // Para criar/editar personal
+  const [selectedPersonalForEdit, setSelectedPersonalForEdit] = useState<PersonalTrainerAdminView | null>(null);
+
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [selectedPersonalForStatus, setSelectedPersonalForStatus] = useState<PersonalTrainerAdminView | null>(null);
+  const [statusActionType, setStatusActionType] = useState<'deactivate' | 'reactivate'>('deactivate');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -57,6 +76,7 @@ export default function PersonalTrainers() {
   });
 
   const { data: allPlans, isLoading: isLoadingAllPlans } = usePlans({ ativo: null }); // Fetch all plans for filter
+  const deletePersonalMutation = useDeletePersonalByAdmin();
 
   const getInitials = (name: string) => {
     return name
@@ -68,17 +88,34 @@ export default function PersonalTrainers() {
   };
 
   const handleViewDetails = (id: string) => {
-    // Implement navigation to personal trainer detail page
-    console.log("Ver detalhes do Personal Trainer:", id);
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: `Detalhes para o Personal Trainer ${id} serão implementados em breve.`,
-    });
+    navigate(`/admin/personal-trainers/${id}`);
+  };
+
+  const handleNewPersonal = () => {
+    setSelectedPersonalForEdit(null);
+    setIsFormDialogOpen(true);
+  };
+
+  const handleEditPersonal = (personal: PersonalTrainerAdminView) => {
+    setSelectedPersonalForEdit(personal);
+    setIsFormDialogOpen(true);
   };
 
   const handleAssignPlan = (personal: PersonalTrainerAdminView) => {
     setSelectedPersonalForPlan(personal);
     setIsAssignPlanDialogOpen(true);
+  };
+
+  const handleToggleStatus = (personal: PersonalTrainerAdminView) => {
+    setSelectedPersonalForStatus(personal);
+    setStatusActionType(personal.ativo ? 'deactivate' : 'reactivate');
+    setIsStatusDialogOpen(true);
+  };
+
+  const handleDeletePersonal = (personal: PersonalTrainerAdminView) => {
+    if (window.confirm(`Tem certeza que deseja deletar o personal trainer ${personal.nome}? Esta ação é irreversível e só é possível se ele não tiver alunos ativos.`)) {
+      deletePersonalMutation.mutate(personal.id);
+    }
   };
 
   const handleExportCSV = () => {
@@ -136,10 +173,15 @@ export default function PersonalTrainers() {
           <h1 className="text-3xl font-bold">Personal Trainers</h1>
           <p className="text-muted-foreground">Gerencie todos os personal trainers da plataforma</p>
         </div>
-        <Button onClick={handleExportCSV} className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 gap-2">
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleExportCSV} className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 gap-2">
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Button onClick={handleNewPersonal} className="bg-secondary-blue text-white hover:bg-secondary-blue/90">
+            <PlusCircle className="mr-2 h-4 w-4" /> Novo Personal Trainer
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -287,22 +329,40 @@ export default function PersonalTrainers() {
                     {personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleAssignPlan(personal)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" /> Plano
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleViewDetails(personal.id)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleViewDetails(personal.id)}>
+                          <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditPersonal(personal)}>
+                          <Edit className="mr-2 h-4 w-4" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAssignPlan(personal)}>
+                          <ListChecks className="mr-2 h-4 w-4" /> Atribuir Plano
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className={personal.ativo ? "text-destructive" : "text-green-600"}
+                          onClick={() => handleToggleStatus(personal)}
+                        >
+                          {personal.ativo ? <XCircle className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                          {personal.ativo ? 'Desativar Personal' : 'Ativar Personal'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDeletePersonal(personal)}
+                          disabled={deletePersonalMutation.isPending}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Deletar Personal
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -327,6 +387,21 @@ export default function PersonalTrainers() {
           isOpen={isAssignPlanDialogOpen}
           onClose={() => setIsAssignPlanDialogOpen(false)}
           personal={selectedPersonalForPlan}
+        />
+      )}
+
+      <PersonalFormDialog
+        isOpen={isFormDialogOpen}
+        onClose={() => setIsFormDialogOpen(false)}
+        personal={selectedPersonalForEdit}
+      />
+
+      {selectedPersonalForStatus && (
+        <PersonalStatusDialogAdmin
+          isOpen={isStatusDialogOpen}
+          onClose={() => setIsStatusDialogOpen(false)}
+          personal={selectedPersonalForStatus}
+          actionType={statusActionType}
         />
       )}
     </div>

@@ -568,6 +568,10 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_personal_by_admin: {
+        Args: { p_personal_id: string }
+        Returns: Json
+      }
       get_admin_summary_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -697,6 +701,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      reset_personal_password_admin: {
+        Args: { p_personal_id: string }
+        Returns: Json
+      }
       search_exercicios: {
         Args: { grupo?: string; search_term?: string }
         Returns: {
@@ -712,6 +720,20 @@ export type Database = {
       }
       toggle_aluno_status: {
         Args: { p_aluno_id: string; p_ativo: boolean; p_motivo?: string }
+        Returns: Json
+      }
+      toggle_personal_status_admin: {
+        Args: { p_personal_id: string; p_ativo: boolean; p_motivo?: string }
+        Returns: Json
+      }
+      update_personal_by_admin: {
+        Args: {
+          p_cref?: string
+          p_email: string
+          p_nome: string
+          p_personal_id: string
+          p_telefone?: string
+        }
         Returns: Json
       }
     }

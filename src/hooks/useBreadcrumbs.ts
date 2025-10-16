@@ -21,7 +21,7 @@ const routeLabels: { [key: string]: string } = {
   '/admin/personal-trainers': 'Personal Trainers',
   '/admin/alunos': 'Alunos',
   '/admin/planos': 'Planos',
-  '/admin/estatisticas': 'Estatísticas', // Adicionado
+  '/admin/estatisticas': 'Estatísticas',
 };
 
 export function useBreadcrumbs(userRole: 'admin' | 'personal' | 'aluno' | null) {
@@ -64,6 +64,8 @@ export function useBreadcrumbs(userRole: 'admin' | 'personal' | 'aluno' | null) 
           label = 'Editar Exercício';
         } else if (currentPath.match(/^\/personal\/treinos\/[^/]+\/edit$/)) {
           label = 'Editar Treino';
+        } else if (currentPath.match(/^\/admin\/personal-trainers\/[^/]+$/)) {
+          label = 'Detalhes do Personal'; // Nova rota dinâmica
         } else {
           // Fallback: capitaliza e substitui hífens por espaços
           label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');

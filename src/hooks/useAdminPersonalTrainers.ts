@@ -100,3 +100,25 @@ export function useAdminPersonalTrainers(filters: UseAdminPersonalTrainersFilter
     error,
   };
 }
+
+export function usePersonalDetailsAdmin(personalId: string | undefined) {
+  return useQuery<PersonalTrainerAdminView | null, Error>({
+    queryKey: ["personalDetailsAdmin", personalId],
+    queryFn: async () => {
+      if (!personalId) return null;
+      const { data, error } = await supabase.rpc('get_personal_trainers_admin_view', {
+        search_term: null, // Não usar busca por termo aqui
+        plan_filter: null,
+        status_filter: null,
+        sort_by: 'created_at_desc', // Ordem padrão
+        page_size: 1, // Apenas um resultado
+        page_number: 1
+      }).eq('id', personalId).single(); // Filtrar pelo ID específico
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!personalId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
