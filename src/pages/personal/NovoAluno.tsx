@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod"; // Manter import para z.infer
+import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CalendarIcon, Clipboard, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale"; // Importar localização em português
 import { cn } from "@/lib/utils";
 import InputMask from "react-input-mask";
 import { useCreateAluno } from "@/hooks/useCreateAluno";
-import { alunoSchema } from "@/lib/validations"; // Importar o schema centralizado
+import { alunoSchema } from "@/lib/validations";
 
 const calculateAge = (dateString: string): number => {
   const birthDate = new Date(dateString);
@@ -228,10 +228,10 @@ export default function NovoAluno() {
                             date > new Date() || date < new Date("1900-01-01") || isLoading
                           }
                           initialFocus
-                          locale={ptBR}
-                          captionLayout="dropdown"
-                          fromYear={1900}
-                          toYear={new Date().getFullYear()}
+                          locale={ptBR} // Adicionado para português do Brasil
+                          captionLayout="dropdown" // Adicionado para corrigir o layout do seletor de mês/ano
+                          fromYear={1900} // Adicionado para melhor navegação de ano
+                          toYear={new Date().getFullYear()} // Adicionado para melhor navegação de ano
                         />
                       </PopoverContent>
                     </Popover>
