@@ -9,10 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox"; // Importar Checkbox
+import { Label } from "@/components/ui/label"; // Importar Label para o Checkbox
+import { Loader2 } from "lucide-react"; // Importar Loader2 para o spinner
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  rememberMe: z.boolean().default(true), // Adicionar campo para 'Lembrar-me'
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -26,6 +30,7 @@ export default function Login() {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: true, // Padrão para manter conectado
     },
   });
 
@@ -35,22 +40,49 @@ export default function Login() {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
+        options: {
+          shouldRemember: data.rememberMe, // Usar a preferência do usuário
+        },
       });
 
-      if (error) throw error;
+      if (error) {
+        let errorMessage = "Ocorreu um erro inesperado. Tente novamente.";
+        if (error.message === "Invalid login credentials") {
+          errorMessage = "Email ou senha incorretos.";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Por favor, confirme seu email antes de fazer login.";
+        } else if (error.message.includes("User not found")) {
+          errorMessage = "Usuário não encontrado. Verifique o email digitado.";
+        }
+        throw new Error(errorMessage);
+      }
 
       if (authData.user) {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("role")
+          .select("nome, role")
           .eq("id", authData.user.id)
           .single();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          toast({
+            variant: "destructive",
+            title: "Erro ao carregar perfil",
+            description: (
+              <>
+                Não foi possível carregar as informações do seu perfil. Por favor, tente novamente ou{" "}
+                <Link to="/contato" className="underline">contate o suporte</Link>.
+              </>
+            ),
+          });
+          // Opcional: deslogar o usuário se o perfil não puder ser carregado
+          await supabase.auth.signOut();
+          return;
+        }
 
         toast({
           title: "Login realizado!",
-          description: "Bem-vindo ao Atrenis",
+          description: `Bem-vindo(a) ao Atrenis, ${profile.nome.split(' ')[0]}!`,
         });
 
         // Redirecionar baseado na role
@@ -66,9 +98,7 @@ export default function Login() {
       toast({
         variant: "destructive",
         title: "Erro no login",
-        description: error.message === "Invalid login credentials"
-          ? "Email ou senha incorretos"
-          : error.message,
+        description: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -92,7 +122,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="seu@email.com" {...field} />
+                      <Input type="email" placeholder="seu@email.com" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -106,21 +136,45 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <Input type="password" placeholder="••••••" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="text-right">
+              <div className="flex items-center justify-between">
+                <FormField
+                  control={form.control}
+                  name="rememberMe"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <Label>Manter conectado</Label>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 <Link to="/recuperar-senha" className="text-sm text-primary hover:underline">
                   Esqueci minha senha
                 </Link>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Entrando..." : "Entrar"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
               </Button>
 
               <p className="text-sm text-center text-muted-foreground mt-4">
