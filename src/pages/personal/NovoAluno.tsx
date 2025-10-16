@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale"; // Importar locale para formatação de data
 import { cn } from "@/lib/utils";
 import InputMask from "react-input-mask"; // Importar InputMask
+import { useCreateAluno } from "@/hooks/useCreateAluno"; // Importar o novo hook
 
 const calculateAge = (dateString: string): number => {
   const birthDate = new Date(dateString);
@@ -66,10 +67,11 @@ type AlunoFormData = z.infer<typeof alunoSchema>;
 
 export default function NovoAluno() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [personalId, setPersonalId] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [newAlunoCredentials, setNewAlunoCredentials] = useState({ email: "", senha: "" });
+
+  const { mutate: createAluno, isLoading, error } = useCreateAluno();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -105,42 +107,47 @@ export default function NovoAluno() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('create_aluno_by_personal', {
-        p_email: data.email,
-        p_nome: data.nome,
-        p_telefone: data.telefone,
-        p_data_nascimento: data.data_nascimento,
-        p_objetivo: data.objetivo,
-        p_observacoes: data.observacoes,
-      });
+    createAluno(
+      {
+        email: data.email,
+        nome: data.nome,
+        telefone: data.telefone,
+        data_nascimento: data.data_nascimento,
+        objetivo: data.objetivo,
+        observacoes: data.observacoes,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.success && response.email && response.temp_password) {
+            setNewAlunoCredentials({ email: response.email, senha: response.temp_password });
+            setShowSuccessDialog(true);
+            form.reset(); // Limpa o formulário após o sucesso
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Erro ao cadastrar aluno",
+              description: response.error || "Erro desconhecido ao criar aluno.",
+            });
+          }
+        },
+        onError: (err) => {
+          let errorMessage = "Erro ao cadastrar aluno. Tente novamente.";
+          if (err.message.includes("Email já cadastrado no sistema")) {
+            errorMessage = "Este email já está cadastrado. Por favor, use outro email.";
+          } else if (err.message.includes("Apenas personal trainers podem criar alunos")) {
+            errorMessage = "Erro de permissão: Apenas personal trainers podem criar alunos.";
+          } else {
+            errorMessage = err.message;
+          }
 
-      if (rpcError) throw rpcError;
-      if (!rpcData.success) throw new Error(rpcData.error || "Erro desconhecido ao criar aluno.");
-
-      setNewAlunoCredentials({ email: rpcData.email, senha: rpcData.temp_password });
-      setShowSuccessDialog(true);
-      form.reset(); // Limpa o formulário após o sucesso
-
-    } catch (error: any) {
-      let errorMessage = "Erro ao cadastrar aluno. Tente novamente.";
-      if (error.message.includes("Email já cadastrado no sistema")) {
-        errorMessage = "Este email já está cadastrado. Por favor, use outro email.";
-      } else if (error.message.includes("Aluno não pertence a este personal trainer")) {
-        errorMessage = "Erro de permissão: O aluno não pode ser atribuído a este personal.";
-      } else {
-        errorMessage = error.message;
+          toast({
+            variant: "destructive",
+            title: "Erro ao cadastrar aluno",
+            description: errorMessage,
+          });
+        },
       }
-
-      toast({
-        variant: "destructive",
-        title: "Erro ao cadastrar aluno",
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   const handleCopyCredentials = () => {
