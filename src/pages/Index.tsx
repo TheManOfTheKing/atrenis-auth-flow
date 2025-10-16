@@ -100,6 +100,7 @@ const Index = () => {
               <button onClick={() => scrollToSection("depoimentos")} className="text-white hover:text-primary-yellow transition-colors">
                 Depoimentos
               </button>
+              {/* Link para a página Sobre removido do cabeçalho */}
               <button onClick={() => scrollToSection("contato")} className="text-white hover:text-primary-yellow transition-colors">
                 Contato
               </button>
