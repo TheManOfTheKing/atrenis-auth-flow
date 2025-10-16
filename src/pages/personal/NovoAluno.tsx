@@ -14,9 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { CalendarIcon, Clipboard } from "lucide-react";
+import { CalendarIcon, Clipboard, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale"; // Importar locale para formatação de data
 import { cn } from "@/lib/utils";
+import InputMask from "react-input-mask"; // Importar InputMask
 
 const calculateAge = (dateString: string): number => {
   const birthDate = new Date(dateString);
@@ -29,21 +31,28 @@ const calculateAge = (dateString: string): number => {
   return age;
 };
 
-const generatePassword = (): string => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let password = '';
-  for (let i = 0; i < 8; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
-
 const alunoSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
-  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  telefone: z.string().min(10, "Telefone inválido (mínimo 10 dígitos)").max(15, "Telefone inválido (máximo 15 dígitos)"),
+  email: z.string().email("Email inválido").refine(async (email) => {
+    // Validação assíncrona para verificar se o email já existe
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .single();
+    return !data; // Retorna true se o email NÃO existir
+  }, {
+    message: "Este email já está cadastrado.",
+    path: ["email"],
+  }),
+  telefone: z.string().refine(val => {
+    // Remove caracteres não numéricos para validação
+    const cleaned = val.replace(/\D/g, '');
+    // Valida formato de telefone brasileiro (10 ou 11 dígitos)
+    return /^\d{10,11}$/.test(cleaned);
+  }, "Telefone inválido. Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX"),
   data_nascimento: z.string().refine(date => {
+    if (!date) return false; // Data de nascimento é obrigatória
     const age = calculateAge(date);
     return age >= 12 && age <= 120;
   }, "Idade deve estar entre 12 e 120 anos"),
@@ -61,7 +70,6 @@ export default function NovoAluno() {
   const [personalId, setPersonalId] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [newAlunoCredentials, setNewAlunoCredentials] = useState({ email: "", senha: "" });
-  const [generatedPassword, setGeneratedPassword] = useState(generatePassword());
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -80,22 +88,12 @@ export default function NovoAluno() {
     defaultValues: {
       nome: "",
       email: "",
-      senha: generatedPassword,
       telefone: "",
       data_nascimento: "",
-      objetivo: undefined, // Use undefined for initial state of enum
+      objetivo: undefined,
       observacoes: "",
     },
   });
-
-  // Update form's password field when generatedPassword changes
-  useEffect(() => {
-    form.setValue("senha", generatedPassword);
-  }, [generatedPassword, form]);
-
-  const handleGenerateNewPassword = () => {
-    setGeneratedPassword(generatePassword());
-  };
 
   const onSubmit = async (data: AlunoFormData) => {
     if (!personalId) {
@@ -109,48 +107,36 @@ export default function NovoAluno() {
 
     setIsLoading(true);
     try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.senha,
-        options: {
-          data: {
-            nome: data.nome,
-            role: 'aluno',
-            personal_id: personalId,
-          },
-          emailRedirectTo: `${window.location.origin}/aluno/dashboard`, // Redireciona o aluno para o dashboard após confirmação
-        },
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_aluno_by_personal', {
+        p_email: data.email,
+        p_nome: data.nome,
+        p_telefone: data.telefone,
+        p_data_nascimento: data.data_nascimento,
+        p_objetivo: data.objetivo,
+        p_observacoes: data.observacoes,
       });
 
-      if (authError) throw authError;
+      if (rpcError) throw rpcError;
+      if (!rpcData.success) throw new Error(rpcData.error || "Erro desconhecido ao criar aluno.");
 
-      // 2. Atualizar perfil na tabela profiles com dados adicionais
-      // O trigger handle_new_user já cria o perfil básico, aqui atualizamos os campos extras
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          telefone: data.telefone,
-          data_nascimento: data.data_nascimento,
-          objetivo: data.objetivo,
-          observacoes_aluno: data.observacoes, // Corrigido para observacoes_aluno
-        })
-        .eq('id', authData.user?.id);
-
-      if (profileError) throw profileError;
-
-      setNewAlunoCredentials({ email: data.email, senha: data.senha });
+      setNewAlunoCredentials({ email: rpcData.email, senha: rpcData.temp_password });
       setShowSuccessDialog(true);
       form.reset(); // Limpa o formulário após o sucesso
-      setGeneratedPassword(generatePassword()); // Gera nova senha para o próximo cadastro
 
     } catch (error: any) {
+      let errorMessage = "Erro ao cadastrar aluno. Tente novamente.";
+      if (error.message.includes("Email já cadastrado no sistema")) {
+        errorMessage = "Este email já está cadastrado. Por favor, use outro email.";
+      } else if (error.message.includes("Aluno não pertence a este personal trainer")) {
+        errorMessage = "Erro de permissão: O aluno não pode ser atribuído a este personal.";
+      } else {
+        errorMessage = error.message;
+      }
+
       toast({
         variant: "destructive",
         title: "Erro ao cadastrar aluno",
-        description: error.message === "User already registered" 
-          ? "Este email já está cadastrado." 
-          : error.message,
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -182,7 +168,7 @@ export default function NovoAluno() {
                   <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome do aluno" {...field} />
+                      <Input placeholder="Nome do aluno" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -196,27 +182,8 @@ export default function NovoAluno() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@aluno.com" {...field} />
+                      <Input type="email" placeholder="email@aluno.com" {...field} disabled={isLoading} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="senha"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha Inicial</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input type="text" readOnly {...field} />
-                      </FormControl>
-                      <Button type="button" onClick={handleGenerateNewPassword} variant="outline">
-                        Gerar Nova
-                      </Button>
-                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -229,7 +196,20 @@ export default function NovoAluno() {
                   <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="(XX) XXXXX-XXXX" {...field} />
+                      <InputMask
+                        mask="(99) 99999-9999"
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      >
+                        {(inputProps: any) => (
+                          <Input
+                            {...inputProps}
+                            type="tel"
+                            placeholder="(XX) XXXXX-XXXX"
+                          />
+                        )}
+                      </InputMask>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -251,9 +231,10 @@ export default function NovoAluno() {
                               "w-full pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
+                            disabled={isLoading}
                           >
                             {field.value ? (
-                              format(new Date(field.value), "PPP")
+                              format(new Date(field.value), "PPP", { locale: ptBR })
                             ) : (
                               <span>Selecione uma data</span>
                             )}
@@ -267,9 +248,10 @@ export default function NovoAluno() {
                           selected={field.value ? new Date(field.value) : undefined}
                           onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
                           disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
+                            date > new Date() || date < new Date("1900-01-01") || isLoading
                           }
                           initialFocus
+                          locale={ptBR}
                         />
                       </PopoverContent>
                     </Popover>
@@ -284,7 +266,7 @@ export default function NovoAluno() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Objetivo Principal</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o objetivo do aluno" />
@@ -310,7 +292,7 @@ export default function NovoAluno() {
                   <FormItem>
                     <FormLabel>Observações (Opcional)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Informações adicionais sobre o aluno" {...field} />
+                      <Textarea placeholder="Informações adicionais sobre o aluno" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -318,11 +300,17 @@ export default function NovoAluno() {
               />
 
               <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => navigate("/personal/alunos")}>
+                <Button type="button" variant="outline" onClick={() => navigate("/personal/alunos")} disabled={isLoading}>
                   Cancelar
                 </Button>
                 <Button type="submit" className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90" disabled={isLoading}>
-                  {isLoading ? "Cadastrando..." : "Cadastrar Aluno"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cadastrando...
+                    </>
+                  ) : (
+                    "Cadastrar Aluno"
+                  )}
                 </Button>
               </div>
             </form>
@@ -333,21 +321,21 @@ export default function NovoAluno() {
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Aluno Cadastrado com Sucesso!</DialogTitle>
+            <DialogTitle>Aluno Cadastrado com Sucesso! 🎉</DialogTitle>
             <DialogDescription>
               As credenciais de acesso foram geradas. Copie e envie essas informações ao aluno.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <p><strong>Email:</strong> {newAlunoCredentials.email}</p>
-            <p><strong>Senha:</strong> {newAlunoCredentials.senha}</p>
+            <p><strong>Senha temporária:</strong> {newAlunoCredentials.senha}</p>
           </div>
           <DialogFooter>
             <Button onClick={handleCopyCredentials}>
               <Clipboard className="mr-2 h-4 w-4" /> Copiar Credenciais
             </Button>
             <Button onClick={() => navigate("/personal/alunos")}>
-              Fechar
+              Ir para Lista de Alunos
             </Button>
           </DialogFooter>
         </DialogContent>
