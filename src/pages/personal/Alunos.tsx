@@ -107,7 +107,7 @@ export default function Alunos() {
           <h1 className="text-3xl font-bold">Meus Alunos</h1>
           <p className="text-muted-foreground">Gerencie seus alunos cadastrados</p>
         </div>
-        <Link to="/personal/alunos/new">
+        <Link to="/personal/alunos/new"> {/* Atualizado para a nova rota */}
           <Button className="bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90">
             <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Novo Aluno
           </Button>
