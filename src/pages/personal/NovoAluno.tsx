@@ -252,6 +252,9 @@ export default function NovoAluno() {
                           }
                           initialFocus
                           locale={ptBR}
+                          captionLayout="dropdown" // Adicionado para permitir seleção de ano e mês
+                          fromYear={1900} // Define o ano inicial para o dropdown
+                          toYear={new Date().getFullYear()} // Define o ano final para o dropdown
                         />
                       </PopoverContent>
                     </Popover>
