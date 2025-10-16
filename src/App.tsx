@@ -12,6 +12,7 @@ import RedefinirSenha from "./pages/auth/RedefinirSenha";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/layout/AuthLayout";
 import PersonalDashboard from "./pages/personal/PersonalDashboard";
+import Alunos from "./pages/personal/Alunos"; // Importar a nova página de Alunos
 import AlunoDashboard from "./pages/aluno/AlunoDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -35,6 +36,13 @@ const App = () => (
             <ProtectedRoute allowedRoles={['personal']}>
               <AuthLayout>
                 <PersonalDashboard />
+              </AuthLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/personal/alunos" element={
+            <ProtectedRoute allowedRoles={['personal']}>
+              <AuthLayout>
+                <Alunos /> {/* Nova rota para Alunos */}
               </AuthLayout>
             </ProtectedRoute>
           } />

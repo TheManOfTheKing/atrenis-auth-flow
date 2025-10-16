@@ -59,7 +59,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
   const navItems = userRole === "personal" ? [
     { icon: LayoutDashboard, label: "Dashboard", path: "/personal/dashboard" },
-    { icon: Users, label: "Alunos", path: "/personal/alunos" },
+    { icon: Users, label: "Alunos", path: "/personal/alunos" }, // Adicionado link para Alunos
     { icon: Dumbbell, label: "Treinos", path: "/personal/treinos" },
     { icon: ListChecks, label: "Exercícios", path: "/personal/exercicios" },
   ] : userRole === "admin" ? [
