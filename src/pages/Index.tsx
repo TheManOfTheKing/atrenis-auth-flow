@@ -19,13 +19,16 @@ import {
   Youtube,
   Star // Adicionado import para o ícone Star
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Adicionado useEffect
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Adicionado import para Avatar
 import { supabase } from "@/integrations/supabase/client"; // Adicionado import para Supabase
 import { toast } from "@/hooks/use-toast"; // Adicionado import para toast
+import { usePlans } from "@/hooks/usePlans"; // Importar o hook usePlans
+import { Skeleton } from "@/components/ui/skeleton"; // Importar Skeleton
 
 const Index = () => {
   const [email, setEmail] = useState("");
+  const { data: plans, isLoading: isLoadingPlans, error: plansError } = usePlans({ ativo: true, sortBy: 'preco_mensal_asc' });
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -349,136 +352,67 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Básico */}
-            <Card className="bg-gray-800 border-none text-white">
-              <CardHeader>
-                <CardTitle className="text-2xl mb-4">Básico</CardTitle>
-                <div>
-                  <p className="text-6xl font-black mb-2">R$97</p>
-                  <p className="text-gray-400 text-sm">por mês</p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Até 20 alunos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Agendamentos ilimitados</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Criação de treinos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Gestão financeira básica</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Suporte por email</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full mt-6 border-white text-white bg-transparent hover:bg-white hover:text-primary-dark">
-                  Comece Agora
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Profissional (Destaque) */}
-            <Card className="bg-gray-800 border-2 border-primary-yellow text-white relative">
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-yellow text-primary-dark font-bold">
-                MAIS POPULAR
-              </Badge>
-              <CardHeader>
-                <CardTitle className="text-2xl mb-4">Profissional</CardTitle>
-                <div>
-                  <p className="text-6xl font-black mb-2">R$197</p>
-                  <p className="text-gray-400 text-sm">por mês</p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Até 50 alunos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Agendamentos ilimitados</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Biblioteca de exercícios</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span className="text-primary-yellow font-semibold">Gestão financeira completa</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Avaliações físicas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span className="text-primary-yellow font-semibold">Suporte prioritário</span>
-                  </div>
-                </div>
-                <Button className="w-full mt-6 bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold">
-                  Escolher Plano
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Premium */}
-            <Card className="bg-gray-800 border-none text-white">
-              <CardHeader>
-                <CardTitle className="text-2xl mb-4">Premium</CardTitle>
-                <div>
-                  <p className="text-6xl font-black mb-2">R$297</p>
-                  <p className="text-gray-400 text-sm">por mês</p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Alunos ilimitados</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Agendamentos ilimitados</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Biblioteca completa de exercícios</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Gestão financeira avançada</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span>Avaliações físicas avançadas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span className="text-primary-yellow font-semibold">App personalizado</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-secondary-green" />
-                    <span className="text-primary-yellow font-semibold">Suporte VIP</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full mt-6 border-secondary-blue text-white bg-transparent hover:bg-secondary-blue hover:text-white">
-                  Contato
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          {isLoadingPlans ? (
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="bg-gray-800 border-none text-white">
+                  <CardHeader>
+                    <Skeleton className="h-6 w-1/2 mb-4" />
+                    <Skeleton className="h-12 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/3" />
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      {[...Array(5)].map((_, j) => <Skeleton key={j} className="h-4 w-full" />)}
+                    </div>
+                    <Skeleton className="h-10 w-full mt-6" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : plansError ? (
+            <p className="text-destructive text-center">Erro ao carregar planos: {plansError.message}</p>
+          ) : plans && plans.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {plans.map((plan, index) => (
+                <Card key={plan.id} className={`bg-gray-800 border-none text-white ${index === 1 ? 'border-2 border-primary-yellow relative' : ''}`}>
+                  {index === 1 && (
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-yellow text-primary-dark font-bold">
+                      MAIS POPULAR
+                    </Badge>
+                  )}
+                  <CardHeader>
+                    <CardTitle className="text-2xl mb-4">{plan.nome}</CardTitle>
+                    <div>
+                      <p className="text-6xl font-black mb-2">R${plan.preco_mensal.toFixed(2).replace('.', ',')}</p>
+                      <p className="text-gray-400 text-sm">por mês</p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      {(plan.recursos as string[] || []).map((recurso, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <Check className="h-5 w-5 text-secondary-green" />
+                          <span>{recurso}</span>
+                        </div>
+                      ))}
+                      {plan.max_alunos !== null && (
+                        <div className="flex items-center gap-2">
+                          <Check className="h-5 w-5 text-secondary-green" />
+                          <span>Até {plan.max_alunos === 0 ? 'ilimitados' : plan.max_alunos} alunos</span>
+                        </div>
+                      )}
+                    </div>
+                    <Button variant={index === 1 ? 'default' : 'outline'} className={`w-full mt-6 ${index === 1 ? 'bg-primary-yellow text-primary-dark hover:bg-primary-yellow/90 font-bold' : 'border-white text-white bg-transparent hover:bg-white hover:text-primary-dark'}`}>
+                      {index === 2 ? 'Contato' : 'Comece Agora'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center">Nenhum plano ativo encontrado.</p>
+          )}
         </div>
       </section>
 

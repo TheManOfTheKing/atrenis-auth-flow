@@ -1,26 +1,39 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables, Enums } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Download } from "lucide-react";
+import { Search, Eye, Download, DollarSign, Edit, ListChecks } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-type PersonalProfile = Tables<'profiles'> & {
-  alunos: { count: number }[];
-  treinos: { count: number }[];
-};
+// Novos hooks e componentes
+import { useAdminPersonalTrainers, PersonalTrainerAdminView } from "@/hooks/useAdminPersonalTrainers";
+import { usePlans } from "@/hooks/usePlans"; // Para popular o filtro de planos
+import AssignPlanToPersonalDialog from "@/components/admin/AssignPlanToPersonalDialog";
+import AlunosPagination from "@/components/personal/AlunosPagination"; // Reutilizando o componente de paginação
+
+const ITEMS_PER_PAGE = 10;
 
 export default function PersonalTrainers() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [planFilter, setPlanFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<Enums<'subscription_status'> | null>(null);
+  const [sortBy, setSortBy] = useState("created_at_desc");
+  const [currentPage, setCurrentPage] = useState(1);
   const [adminId, setAdminId] = useState<string | null>(null); // To ensure only admin can access
+
+  const [isAssignPlanDialogOpen, setIsAssignPlanDialogOpen] = useState(false);
+  const [selectedPersonalForPlan, setSelectedPersonalForPlan] = useState<PersonalTrainerAdminView | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -35,35 +48,15 @@ export default function PersonalTrainers() {
     fetchUser();
   }, [navigate]);
 
-  const { data: personals, isLoading, error } = useQuery<PersonalProfile[]>({
-    queryKey: ["adminPersonals", searchTerm],
-    queryFn: async () => {
-      if (!adminId) return []; // Only fetch if admin is identified
-
-      let query = supabase
-        .from('profiles')
-        .select(`
-          id,
-          nome,
-          email,
-          cref,
-          created_at,
-          alunos:profiles!personal_id(count),
-          treinos(count)
-        `)
-        .eq('role', 'personal');
-
-      if (searchTerm) {
-        query = query.or(`nome.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as PersonalProfile[];
-    },
-    enabled: !!adminId, // Only enable query if adminId is set
+  const { personalTrainers, totalPersonalTrainers, totalPages, isLoading, error } = useAdminPersonalTrainers({
+    searchTerm,
+    planFilter,
+    statusFilter,
+    sortBy,
+    currentPage,
   });
+
+  const { data: allPlans, isLoading: isLoadingAllPlans } = usePlans({ ativo: null }); // Fetch all plans for filter
 
   const getInitials = (name: string) => {
     return name
@@ -83,8 +76,13 @@ export default function PersonalTrainers() {
     });
   };
 
+  const handleAssignPlan = (personal: PersonalTrainerAdminView) => {
+    setSelectedPersonalForPlan(personal);
+    setIsAssignPlanDialogOpen(true);
+  };
+
   const handleExportCSV = () => {
-    if (!personals || personals.length === 0) {
+    if (!personalTrainers || personalTrainers.length === 0) {
       toast({
         variant: "destructive",
         title: "Erro na exportação",
@@ -93,14 +91,21 @@ export default function PersonalTrainers() {
       return;
     }
 
-    const headers = ['Nome', 'Email', 'CREF', 'Alunos', 'Treinos', 'Data de Cadastro'];
-    const rows = personals.map(personal => [
+    const headers = [
+      'Nome', 'Email', 'CREF', 'Plano Atual', 'Status Assinatura', 'Desconto (%)',
+      'Data Assinatura', 'Data Vencimento', 'Alunos Ativos', 'Data de Cadastro'
+    ];
+    const rows = personalTrainers.map(personal => [
       personal.nome,
       personal.email,
       personal.cref || '-',
-      personal.alunos[0]?.count || 0,
-      personal.treinos[0]?.count || 0,
-      new Date(personal.created_at).toLocaleDateString('pt-BR')
+      personal.plan_nome || 'Nenhum',
+      personal.status_assinatura || 'Pendente',
+      personal.desconto_percentual || 0,
+      personal.data_assinatura ? format(new Date(personal.data_assinatura), "dd/MM/yyyy", { locale: ptBR }) : '-',
+      personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-',
+      personal.total_alunos || 0,
+      format(new Date(personal.created_at), "dd/MM/yyyy", { locale: ptBR })
     ]);
 
     let csvContent = headers.join(',') + '\n';
@@ -137,28 +142,70 @@ export default function PersonalTrainers() {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Buscar personal trainer por nome ou email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="relative col-span-full md:col-span-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Buscar personal trainer por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select onValueChange={(value) => setPlanFilter(value === "all" ? null : value)} value={planFilter || "all"}>
+          <SelectTrigger className="col-span-full md:col-span-1">
+            <SelectValue placeholder="Filtrar por plano" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Planos</SelectItem>
+            <SelectItem value="none">Sem Plano</SelectItem>
+            {isLoadingAllPlans ? (
+              <SelectItem value="loading-plans" disabled>Carregando planos...</SelectItem>
+            ) : (
+              allPlans?.map(plan => (
+                <SelectItem key={plan.id} value={plan.id}>{plan.nome}</SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+        <Select onValueChange={(value) => setStatusFilter(value === "all" ? null : value as Enums<'subscription_status'>)} value={statusFilter || "all"}>
+          <SelectTrigger className="col-span-full md:col-span-1">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="ativa">Ativa</SelectItem>
+            <SelectItem value="cancelada">Cancelada</SelectItem>
+            <SelectItem value="vencida">Vencida</SelectItem>
+            <SelectItem value="trial">Trial</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select onValueChange={setSortBy} value={sortBy}>
+          <SelectTrigger className="col-span-full md:col-span-1">
+            <SelectValue placeholder="Ordenar por..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="created_at_desc">Mais Recentes</SelectItem>
+            <SelectItem value="created_at_asc">Mais Antigos</SelectItem>
+            <SelectItem value="nome_asc">Nome (A-Z)</SelectItem>
+            <SelectItem value="nome_desc">Nome (Z-A)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {isLoading ? (
+      {isLoading && !personalTrainers.length ? (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">Personal</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>CREF</TableHead>
+                <TableHead>Plano Atual</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Alunos</TableHead>
-                <TableHead>Treinos</TableHead>
-                <TableHead>Cadastro</TableHead>
+                <TableHead>Vencimento</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -172,8 +219,8 @@ export default function PersonalTrainers() {
                     </div>
                   </TableCell>
                   <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
@@ -182,22 +229,22 @@ export default function PersonalTrainers() {
             </TableBody>
           </Table>
         </div>
-      ) : personals && personals.length > 0 ? (
+      ) : personalTrainers && personalTrainers.length > 0 ? (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">Personal</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>CREF</TableHead>
+                <TableHead>Plano Atual</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Alunos</TableHead>
-                <TableHead>Treinos</TableHead>
-                <TableHead>Cadastro</TableHead>
+                <TableHead>Vencimento</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {personals.map((personal) => (
+              {personalTrainers.map((personal) => (
                 <TableRow key={personal.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -210,20 +257,52 @@ export default function PersonalTrainers() {
                     </div>
                   </TableCell>
                   <TableCell>{personal.email}</TableCell>
-                  <TableCell>{personal.cref || '-'}</TableCell>
-                  <TableCell>{personal.alunos[0]?.count || 0}</TableCell>
-                  <TableCell>{personal.treinos[0]?.count || 0}</TableCell>
                   <TableCell>
-                    {new Date(personal.created_at).toLocaleDateString('pt-BR')}
+                    {personal.plan_nome || <Badge variant="outline">Nenhum</Badge>}
+                    {personal.desconto_percentual && personal.desconto_percentual > 0 && (
+                      <Badge variant="secondary" className="ml-2">{personal.desconto_percentual}% OFF</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {personal.status_assinatura ? (
+                      <Badge
+                        className={`
+                          ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                          ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
+                          ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
+                          ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
+                          ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
+                        `}
+                      >
+                        {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Pendente</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {personal.total_alunos} {personal.plan_max_alunos !== null && personal.plan_max_alunos > 0 && ` / ${personal.plan_max_alunos}`}
+                  </TableCell>
+                  <TableCell>
+                    {personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleViewDetails(personal.id)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAssignPlan(personal)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" /> Plano
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewDetails(personal.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -232,6 +311,23 @@ export default function PersonalTrainers() {
         </div>
       ) : (
         <p className="text-muted-foreground text-center">Nenhum personal trainer encontrado.</p>
+      )}
+
+      <AlunosPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+      />
+      <p className="text-sm text-muted-foreground text-center mt-4">
+        Total de personal trainers: {totalPersonalTrainers}
+      </p>
+
+      {selectedPersonalForPlan && (
+        <AssignPlanToPersonalDialog
+          isOpen={isAssignPlanDialogOpen}
+          onClose={() => setIsAssignPlanDialogOpen(false)}
+          personal={selectedPersonalForPlan}
+        />
       )}
     </div>
   );

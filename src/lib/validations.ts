@@ -162,3 +162,16 @@ export const planSchema = z.object({
   message: "Preço anual não pode ser maior que 12x o preço mensal",
   path: ["preco_anual"],
 });
+
+// Schema para atribuição de plano a personal trainer
+export const assignPlanSchema = z.object({
+  personalId: z.string().uuid('ID do personal inválido'),
+  planId: z.string().uuid('Selecione um plano'),
+  desconto_percentual: z.coerce.number()
+    .min(0, 'Desconto não pode ser negativo')
+    .max(100, 'Desconto não pode ser maior que 100%')
+    .default(0),
+  periodo: z.enum(['mensal', 'anual'], {
+    errorMap: () => ({ message: "Selecione um período de assinatura" }),
+  }),
+});

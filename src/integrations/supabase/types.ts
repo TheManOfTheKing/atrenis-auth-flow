@@ -262,7 +262,10 @@ export type Database = {
         Row: {
           created_at: string
           cref: string | null
+          data_assinatura: string | null
           data_nascimento: string | null
+          data_vencimento: string | null
+          desconto_percentual: number | null
           email: string
           foto_perfil: string | null
           id: string
@@ -270,7 +273,11 @@ export type Database = {
           objetivo: string | null
           observacoes_aluno: string | null
           personal_id: string | null
+          plan_id: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status_assinatura:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
           subscription_id: string | null
           subscription_status:
             | Database["public"]["Enums"]["subscription_status"]
@@ -281,7 +288,10 @@ export type Database = {
         Insert: {
           created_at?: string
           cref?: string | null
+          data_assinatura?: string | null
           data_nascimento?: string | null
+          data_vencimento?: string | null
+          desconto_percentual?: number | null
           email: string
           foto_perfil?: string | null
           id: string
@@ -289,7 +299,11 @@ export type Database = {
           objetivo?: string | null
           observacoes_aluno?: string | null
           personal_id?: string | null
+          plan_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status_assinatura?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
           subscription_id?: string | null
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
@@ -300,7 +314,10 @@ export type Database = {
         Update: {
           created_at?: string
           cref?: string | null
+          data_assinatura?: string | null
           data_nascimento?: string | null
+          data_vencimento?: string | null
+          desconto_percentual?: number | null
           email?: string
           foto_perfil?: string | null
           id?: string
@@ -308,7 +325,11 @@ export type Database = {
           objetivo?: string | null
           observacoes_aluno?: string | null
           personal_id?: string | null
+          plan_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status_assinatura?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
           subscription_id?: string | null
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
@@ -322,6 +343,13 @@ export type Database = {
             columns: ["personal_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
@@ -480,6 +508,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_plan_to_personal: {
+        Args: {
+          p_personal_id: string
+          p_plan_id: string
+          p_desconto_percentual: number
+          p_periodo: string
+        }
+        Returns: Json
+      }
       get_aluno_stats: {
         Args: { aluno_uuid: string }
         Returns: {
@@ -505,6 +542,32 @@ export type Database = {
           total_alunos: number
           total_execucoes: number
           total_treinos: number
+        }[]
+      }
+      get_personal_trainers_admin_view: {
+        Args: {
+          page_number?: number
+          page_size?: number
+          plan_filter?: string
+          search_term?: string
+          sort_by?: string
+          status_filter?: Database["public"]["Enums"]["subscription_status"]
+        }
+        Returns: {
+          created_at: string
+          cref: string
+          data_assinatura: string
+          data_vencimento: string
+          desconto_percentual: number
+          email: string
+          id: string
+          nome: string
+          plan_id: string
+          plan_max_alunos: number
+          plan_nome: string
+          status_assinatura: Database["public"]["Enums"]["subscription_status"]
+          total_alunos: number
+          total_count: number
         }[]
       }
       get_upcoming_appointments: {
@@ -542,12 +605,11 @@ export type Database = {
       aluno_treino_status: "ativo" | "concluido" | "cancelado"
       comentario_tipo: "feedback" | "duvida" | "orientacao"
       subscription_status:
-        | "pending"
-        | "active"
-        | "inactive"
-        | "trialing"
-        | "past_due"
-        | "canceled"
+        | "ativa"
+        | "cancelada"
+        | "vencida"
+        | "trial"
+        | "pendente"
       user_role: "admin" | "personal" | "aluno"
     }
     CompositeTypes: {
@@ -681,12 +743,11 @@ export const Constants = {
       aluno_treino_status: ["ativo", "concluido", "cancelado"],
       comentario_tipo: ["feedback", "duvida", "orientacao"],
       subscription_status: [
-        "pending",
-        "active",
-        "inactive",
-        "trialing",
-        "past_due",
-        "canceled",
+        "ativa",
+        "cancelada",
+        "vencida",
+        "trial",
+        "pendente",
       ],
       user_role: ["admin", "personal", "aluno"],
     },
