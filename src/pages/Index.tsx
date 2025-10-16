@@ -134,7 +134,7 @@ const Index = () => {
               <p className="text-primary-yellow text-sm font-semibold uppercase tracking-[0.2em] mb-4">
                 SISTEMA COMPLETO DE GESTÃO
               </p>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black leading-tight mb-6"> {/* Ajustado para responsividade */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6"> {/* Ajustado para responsividade */}
                 <span className="text-primary-yellow">POTENCIALIZE</span>{" "}
                 <span className="text-white">SEU NEGÓCIO</span>
                 <br />
