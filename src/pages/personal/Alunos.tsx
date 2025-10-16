@@ -56,7 +56,7 @@ export default function Alunos() {
     setCurrentPage,
   } = usePersonalStudents(personalId);
 
-  const handleViewDetails = (aluno: AlunoWithTre treinoCount) => {
+  const handleViewDetails = (aluno: AlunoWithTreinosCount) => {
     setSelectedAlunoForDetails(aluno);
     setIsDetailsDialogOpen(true);
   };
