@@ -381,7 +381,7 @@ const Index = () => {
                     <span>Suporte por email</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full mt-6 border-white text-white hover:bg-white hover:text-primary-dark">
+                <Button variant="outline" className="w-full mt-6 border-white text-white bg-transparent hover:bg-white hover:text-primary-dark">
                   Comece Agora
                 </Button>
               </CardContent>
@@ -472,7 +472,7 @@ const Index = () => {
                     <span className="text-primary-yellow font-semibold">Suporte VIP</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full mt-6 border-secondary-blue text-white hover:bg-secondary-blue hover:text-white">
+                <Button variant="outline" className="w-full mt-6 border-secondary-blue text-white bg-transparent hover:bg-secondary-blue hover:text-white">
                   Contato
                 </Button>
               </CardContent>
