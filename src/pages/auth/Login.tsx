@@ -100,12 +100,12 @@ export default function Login() {
           return;
         }
 
-        // Verificar se a conta está ativa (verificar se ativo é false explicitamente)
+        // Verificar se a conta está ativa
         if (profile.ativo === false) {
           toast({
             variant: "destructive",
             title: "Conta Desativada",
-            description: "Sua conta foi desativada. Entre em contato com o administrador.",
+            description: "Sua conta foi desativada. Entre em contato com seu personal trainer.",
           });
           await supabase.auth.signOut(); // Forçar logout
           navigate("/login?deactivated=true", { replace: true }); // Redirecionar com param

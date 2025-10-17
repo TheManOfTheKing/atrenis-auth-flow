@@ -2,35 +2,46 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod"; // Manter import para z.infer
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Dumbbell, ListChecks, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { workoutFormSchema, WorkoutFormData } from "@/lib/validations";
-import { WorkoutExercisesStep } from "@/components/personal/treinos/WorkoutExercisesStep";
+import { treinoInfoSchema } from "@/lib/validations"; // Importar o schema centralizado para info básica
 
 const WORKOUT_TYPES = [
   "A", "B", "C", "D", "E", "F", "Cardio", "Funcional", "Personalizado", "Outro"
 ];
 
+type TreinoInfoFormData = z.infer<typeof treinoInfoSchema>;
+
+// Estado global simulado para o formulário multi-step
+interface TreinoEmCriacaoState {
+  step1: TreinoInfoFormData;
+  exercicios: any[]; // Será preenchido na Step 2
+  alunosParaAtribuir: any[]; // Será preenchido na Step 3
+}
+
 export default function NovoTreino() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [personalId, setPersonalId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<WorkoutFormData>({
-    resolver: zodResolver(workoutFormSchema),
-    defaultValues: {
+  const [treinoEmCriacao, setTreinoEmCriacao] = useState<TreinoEmCriacaoState>({
+    step1: {
       nome: "",
-      descricao: "",
-      tipo: "personalizado",
+      tipo: "", // Alterado para string vazia para corresponder ao enum do Zod
       duracao_estimada_min: 60,
-      exercicios: []
-    }
+      descricao: "",
+    },
+    exercicios: [],
+    alunosParaAtribuir: [],
   });
+  const [personalId, setPersonalId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,103 +55,27 @@ export default function NovoTreino() {
     fetchUser();
   }, [navigate]);
 
+  const form = useForm<TreinoInfoFormData>({
+    resolver: zodResolver(treinoInfoSchema),
+    defaultValues: treinoEmCriacao.step1,
+  });
+
   const handleNext = async () => {
-    if (currentStep === 1) {
-      const isValid = await form.trigger(['nome', 'descricao', 'tipo', 'duracao_estimada_min']);
-      if (!isValid) {
-        toast({
-          variant: "destructive",
-          title: "Erro de validação",
-          description: "Por favor, preencha todos os campos obrigatórios corretamente.",
-        });
-        return;
-      }
+    const isValid = await form.trigger(); // Valida apenas os campos do Step 1
+    if (isValid) {
+      setTreinoEmCriacao(prev => ({ ...prev, step1: form.getValues() }));
+      setCurrentStep(2); // Avança para a próxima etapa
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erro de validação",
+        description: "Por favor, preencha todos os campos obrigatórios corretamente.",
+      });
     }
-    
-    if (currentStep === 2) {
-      const exercicios = form.getValues('exercicios');
-      if (!exercicios || exercicios.length === 0) {
-        toast({
-          title: "Erro",
-          description: "Adicione pelo menos 1 exercício ao treino",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-    
-    setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
     setCurrentStep(currentStep - 1);
-  };
-
-  const handleSave = async () => {
-    if (!personalId) {
-      toast({
-        title: "Erro",
-        description: "Usuário não autenticado",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const formData = form.getValues();
-      
-      // 1. Criar o treino
-      const { data: treino, error: treinoError } = await supabase
-        .from('treinos')
-        .insert({
-          personal_id: personalId,
-          nome: formData.nome,
-          descricao: formData.descricao || null,
-          tipo: formData.tipo,
-          duracao_estimada_min: formData.duracao_estimada_min || 60
-        })
-        .select()
-        .single();
-      
-      if (treinoError) throw treinoError;
-      
-      // 2. Inserir exercícios do treino
-      const treinoExercicios = formData.exercicios.map(ex => ({
-        treino_id: treino.id,
-        exercicio_id: ex.exercicio_id,
-        ordem: ex.ordem,
-        series: ex.series,
-        repeticoes: ex.repeticoes,
-        carga: ex.carga || null,
-        descanso_seg: ex.descanso_seg,
-        observacoes: ex.observacoes || null
-      }));
-      
-      const { error: exerciciosError } = await supabase
-        .from('treino_exercicios')
-        .insert(treinoExercicios);
-      
-      if (exerciciosError) throw exerciciosError;
-      
-      toast({
-        title: "Sucesso!",
-        description: "Treino criado com sucesso"
-      });
-      
-      // Redirecionar para a lista de treinos
-      navigate('/personal/treinos');
-      
-    } catch (error: any) {
-      console.error('Erro ao criar treino:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível criar o treino",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   // Renderiza o conteúdo de cada etapa
@@ -148,105 +83,89 @@ export default function NovoTreino() {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Nome do Treino <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full mt-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Ex: Treino A - Peito e Tríceps"
-                  {...form.register('nome')}
-                />
-                {form.formState.errors.nome && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.nome.message}</p>
+          <Form {...form}>
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Treino <span className="text-red-500">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Treino A - Peito e Tríceps" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
-              <div>
-                <label className="text-sm font-medium">Tipo <span className="text-red-500">*</span></label>
-                <select
-                  className="w-full mt-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                  {...form.register('tipo')}
-                >
-                  <option value="">Selecione o tipo</option>
-                  {WORKOUT_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-                {form.formState.errors.tipo && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.tipo.message}</p>
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo <span className="text-red-500">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {WORKOUT_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
-              <div>
-                <label className="text-sm font-medium">Duração Estimada (minutos) <span className="text-red-500">*</span></label>
-                <input
-                  type="number"
-                  min="5"
-                  max="180"
-                  className="w-full mt-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="60"
-                  {...form.register('duracao_estimada_min', { valueAsNumber: true })}
-                />
-                {form.formState.errors.duracao_estimada_min && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.duracao_estimada_min.message}</p>
+              <FormField
+                control={form.control}
+                name="duracao_estimada_min"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Duração Estimada (minutos) <span className="text-red-500">*</span></FormLabel>
+                    <FormControl>
+                      <Input type="number" min="5" max="180" placeholder="60" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
-              <div>
-                <label className="text-sm font-medium">Descrição (Opcional)</label>
-                <textarea
-                  className="w-full mt-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Descreva o objetivo e características deste treino..."
-                  rows={4}
-                  {...form.register('descricao')}
-                />
-                {form.formState.errors.descricao && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.descricao.message}</p>
+              <FormField
+                control={form.control}
+                name="descricao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Descreva o objetivo e características deste treino..." rows={4} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-            </div>
-          </div>
+              />
+            </form>
+          </Form>
         );
       case 2:
-        return <WorkoutExercisesStep form={form} />;
+        return (
+          <div className="text-center py-10">
+            <h3 className="text-xl font-semibold mb-4">Adicionar Exercícios</h3>
+            <p className="text-muted-foreground">Esta etapa será implementada em breve.</p>
+            <Dumbbell className="h-16 w-16 text-muted-foreground mx-auto mt-6" />
+          </div>
+        );
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Revisar Treino</h3>
-              <p className="text-muted-foreground">Confira as informações antes de salvar</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">Informações do Treino</h4>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Nome:</strong> {form.getValues('nome')}</p>
-                  <p><strong>Tipo:</strong> {form.getValues('tipo')}</p>
-                  <p><strong>Duração:</strong> {form.getValues('duracao_estimada_min')} minutos</p>
-                  {form.getValues('descricao') && (
-                    <p><strong>Descrição:</strong> {form.getValues('descricao')}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">Exercícios ({form.getValues('exercicios').length})</h4>
-                <div className="space-y-2">
-                  {form.getValues('exercicios').map((exercicio, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-medium">
-                        {exercicio.ordem}
-                      </span>
-                      <span>{exercicio.series} séries × {exercicio.repeticoes} reps</span>
-                      {exercicio.carga && <span className="text-muted-foreground">({exercicio.carga})</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="text-center py-10">
+            <h3 className="text-xl font-semibold mb-4">Revisar e Salvar</h3>
+            <p className="text-muted-foreground">Esta etapa será implementada em breve.</p>
+            <CheckCircle className="h-16 w-16 text-muted-foreground mx-auto mt-6" />
           </div>
         );
       default:
@@ -312,8 +231,8 @@ export default function NovoTreino() {
             </Button>
           )}
           {currentStep === 3 && (
-            <Button onClick={handleSave} disabled={isLoading}>
-              {isLoading ? "Salvando..." : "Salvar Treino"}
+            <Button disabled>
+              Salvar Treino (Em Breve)
             </Button>
           )}
         </CardFooter>

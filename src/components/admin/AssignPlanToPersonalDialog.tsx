@@ -64,7 +64,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
 
   useEffect(() => {
     if (personal) {
-      const defaultPeriod = personal.plano_vitalicio ? 'vitalicio' : (personal.status_assinatura === 'active' && personal.data_assinatura && personal.data_vencimento && (new Date(personal.data_vencimento).getMonth() !== new Date(personal.data_assinatura).getMonth() + 1)) ? 'anual' : 'mensal';
+      const defaultPeriod = personal.plano_vitalicio ? 'vitalicio' : (personal.status_assinatura === 'ativa' && personal.data_assinatura && personal.data_vencimento && (new Date(personal.data_vencimento).getMonth() !== new Date(personal.data_assinatura).getMonth() + 1)) ? 'anual' : 'mensal';
       form.reset({
         personalId: personal.id,
         planId: personal.plan_id || "",
@@ -149,7 +149,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
 
   if (!personal) return null;
 
-  const hasActivePlan = personal.plan_id && personal.status_assinatura && ['active', 'trial', 'vitalicia'].includes(personal.status_assinatura);
+  const hasActivePlan = personal.plan_id && personal.status_assinatura && ['ativa', 'trial', 'vitalicia'].includes(personal.status_assinatura);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -181,7 +181,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
                   {personal.status_assinatura && personal.status_assinatura !== 'pendente' && (
                     <Badge
                       className={`
-                        ${personal.status_assinatura === 'active' && 'bg-secondary-green text-white'}
+                        ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
                         ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                         ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                         ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}

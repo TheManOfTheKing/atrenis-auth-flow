@@ -9,8 +9,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Edit, Power, Trash2, CheckCircle2, XCircle, Copy, Users, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
+import { PlusCircle, Edit, Power, Trash2, CheckCircle2, XCircle, Copy, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  usePlans,
+  useTogglePlanStatus,
+  useDeletePlan,
+  useDuplicatePlan,
+  useUpdatePlanOrder,
+  useCountPersonalsWithPlan
+} from "@/hooks/usePlans";
+import PlanFormDialog from "@/components/admin/PlanFormDialog";
+import PersonalsWithPlanDialog from "@/components/admin/PersonalsWithPlanDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,31 +29,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import PlanFormDialog from "@/components/admin/PlanFormDialog";
-import PersonalsWithPlanDialog from "@/components/admin/PersonalsWithPlanDialog";
 
 type Plan = Tables<'plans'>;
 
 export default function AdminPlans() {
   const navigate = useNavigate();
   const [adminId, setAdminId] = useState<string | null>(null);
-  const [filterActive, setFilterActive] = useState<string>("all");
-  const [filterType, setFilterType] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("ordem_exibicao_asc");
+  const [filterActive, setFilterActive] = useState<string>("all"); // 'all', 'true', 'false'
+  const [filterType, setFilterType] = useState<string>("all"); // 'all', 'publico', 'vitalicio'
+  const [sortBy, setSortBy] = useState<string>("ordem_exibicao_asc"); // Default sort by display order
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | undefined>(undefined);
+
   const [isPersonalsDialogOpen, setIsPersonalsDialogOpen] = useState(false);
   const [selectedPlanForPersonals, setSelectedPlanForPersonals] = useState<{ id: string; name: string } | null>(null);
-
-  // Estados para dados dos planos
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Em uma aplicação real, você verificaria a role do usuário aqui
         setAdminId(user.id);
       } else {
         navigate("/login");
@@ -52,81 +57,16 @@ export default function AdminPlans() {
     fetchUser();
   }, [navigate]);
 
-  // Função para carregar planos diretamente
-  const fetchPlans = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Iniciando busca de planos...');
-      
-      let query = supabase.from('plans').select('*');
-      
-      // Aplicar filtros
-      if (filterActive !== "all") {
-        query = query.eq('ativo', filterActive === "true");
-      }
-      
-      if (filterType !== "all") {
-        query = query.eq('tipo', filterType);
-      }
-      
-      // Aplicar ordenação
-      switch (sortBy) {
-        case 'nome_asc':
-          query = query.order('nome', { ascending: true });
-          break;
-        case 'nome_desc':
-          query = query.order('nome', { ascending: false });
-          break;
-        case 'preco_mensal_asc':
-          query = query.order('preco_mensal', { ascending: true });
-          break;
-        case 'preco_mensal_desc':
-          query = query.order('preco_mensal', { ascending: false });
-          break;
-        case 'created_at_asc':
-          query = query.order('created_at', { ascending: true });
-          break;
-        case 'created_at_desc':
-          query = query.order('created_at', { ascending: false });
-          break;
-        case 'ordem_exibicao_asc':
-        default:
-          query = query.order('ordem_exibicao', { ascending: true });
-          break;
-      }
-      
-      const { data, error: queryError } = await query;
-      
-      if (queryError) {
-        console.error('Erro na query:', queryError);
-        throw queryError;
-      }
-      
-      console.log('Planos carregados:', data);
-      setPlans(data || []);
-      
-    } catch (err: any) {
-      console.error('Erro ao carregar planos:', err);
-      setError(err.message || 'Erro ao carregar planos');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: plans, isLoading, error } = usePlans({
+    ativo: filterActive === "all" ? null : filterActive === "true",
+    tipo: filterType === "all" ? null : (filterType as Enums<'plan_type'>),
+    sortBy: sortBy as any,
+  });
 
-  // Carregar planos quando os filtros mudarem
-  useEffect(() => {
-    if (adminId) {
-      fetchPlans();
-    }
-  }, [adminId, filterActive, filterType, sortBy]);
-
-  // Debug logs
-  console.log('AdminPlans - isLoading:', isLoading);
-  console.log('AdminPlans - error:', error);
-  console.log('AdminPlans - plans:', plans);
-  console.log('AdminPlans - adminId:', adminId);
+  const togglePlanStatusMutation = useTogglePlanStatus();
+  const deletePlanMutation = useDeletePlan();
+  const duplicatePlanMutation = useDuplicatePlan();
+  const updatePlanOrderMutation = useUpdatePlanOrder();
 
   const handleNewPlan = () => {
     setSelectedPlan(undefined);
@@ -138,100 +78,18 @@ export default function AdminPlans() {
     setIsFormDialogOpen(true);
   };
 
-  const handleToggleStatus = async (planId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('plans')
-        .update({ ativo: !currentStatus })
-        .eq('id', planId);
-      
-      if (error) throw error;
-      
-      toast({ 
-        title: "Sucesso!", 
-        description: `Plano ${!currentStatus ? 'ativado' : 'desativado'} com sucesso.` 
-      });
-      
-      // Recarregar planos
-      fetchPlans();
-    } catch (err: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erro ao alterar status do plano", 
-        description: err.message 
-      });
-    }
+  const handleToggleStatus = (planId: string, currentStatus: boolean) => {
+    togglePlanStatusMutation.mutate({ id: planId, ativo: !currentStatus });
   };
 
-  const handleDeletePlan = async (plan: Plan) => {
+  const handleDeletePlan = (plan: Plan) => {
     if (window.confirm(`Tem certeza que deseja excluir o plano "${plan.nome}"? Esta ação é irreversível e só é possível se não houver personal trainers associados a ele.`)) {
-      try {
-        const { error } = await supabase
-          .from('plans')
-          .delete()
-          .eq('id', plan.id);
-        
-        if (error) throw error;
-        
-        toast({ 
-          title: "Sucesso!", 
-          description: "Plano excluído com sucesso." 
-        });
-        
-        // Recarregar planos
-        fetchPlans();
-      } catch (err: any) {
-        toast({ 
-          variant: "destructive", 
-          title: "Erro ao excluir plano", 
-          description: err.message 
-        });
-      }
+      deletePlanMutation.mutate(plan.id);
     }
   };
 
-  const handleDuplicatePlan = async (planId: string) => {
-    try {
-      const { data: originalPlan, error: fetchError } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('id', planId)
-        .single();
-
-      if (fetchError) throw fetchError;
-      if (!originalPlan) throw new Error("Plano original não encontrado.");
-
-      const { error } = await supabase
-        .from('plans')
-        .insert({
-          nome: `${originalPlan.nome} (Cópia)`,
-          descricao: originalPlan.descricao,
-          preco_mensal: originalPlan.preco_mensal,
-          preco_anual: originalPlan.preco_anual,
-          max_alunos: originalPlan.max_alunos,
-          recursos: originalPlan.recursos,
-          ativo: false,
-          tipo: originalPlan.tipo,
-          visivel_landing: false,
-          ordem_exibicao: 0,
-        });
-
-      if (error) throw error;
-      
-      toast({ 
-        title: "Sucesso!", 
-        description: "Plano duplicado com sucesso. A cópia está inativa por padrão." 
-      });
-      
-      // Recarregar planos
-      fetchPlans();
-    } catch (err: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erro ao duplicar plano", 
-        description: err.message 
-      });
-    }
+  const handleDuplicatePlan = (planId: string) => {
+    duplicatePlanMutation.mutate(planId);
   };
 
   const handleViewPersonals = (plan: Plan) => {
@@ -239,7 +97,7 @@ export default function AdminPlans() {
     setIsPersonalsDialogOpen(true);
   };
 
-  const handleMovePlan = async (planId: string, direction: 'up' | 'down') => {
+  const handleMovePlan = (planId: string, direction: 'up' | 'down') => {
     if (!plans) return;
 
     const currentPlanIndex = plans.findIndex(p => p.id === planId);
@@ -249,86 +107,19 @@ export default function AdminPlans() {
     let newOrder = currentPlan.ordem_exibicao || 0;
 
     if (direction === 'up') {
-      if (currentPlanIndex === 0) return;
+      if (currentPlanIndex === 0) return; // Already at the top
       const prevPlan = plans[currentPlanIndex - 1];
       newOrder = (prevPlan.ordem_exibicao || 0) - 1;
-    } else {
-      if (currentPlanIndex === plans.length - 1) return;
+    } else { // direction === 'down'
+      if (currentPlanIndex === plans.length - 1) return; // Already at the bottom
       const nextPlan = plans[currentPlanIndex + 1];
       newOrder = (nextPlan.ordem_exibicao || 0) + 1;
     }
-
-    try {
-      const { error } = await supabase
-        .from('plans')
-        .update({ ordem_exibicao: newOrder })
-        .eq('id', planId);
-      
-      if (error) throw error;
-      
-      toast({ 
-        title: "Sucesso!", 
-        description: "Ordem de exibição atualizada." 
-      });
-      
-      // Recarregar planos
-      fetchPlans();
-    } catch (err: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erro ao atualizar ordem", 
-        description: err.message 
-      });
-    }
+    updatePlanOrderMutation.mutate({ id: planId, newOrder });
   };
 
-
-  // Verificar se o usuário está autenticado
-  if (!adminId) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Gerenciamento de Planos</h1>
-            <p className="text-muted-foreground">Crie e gerencie os planos de assinatura da plataforma.</p>
-          </div>
-        </div>
-        <div className="rounded-md border border-yellow-500 bg-yellow-50 p-4">
-          <div className="text-yellow-800 font-medium">Verificando autenticação...</div>
-          <div className="text-sm text-yellow-700 mt-1">
-            Aguarde enquanto verificamos suas credenciais.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
-    console.error('Erro ao carregar planos:', error);
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Gerenciamento de Planos</h1>
-            <p className="text-muted-foreground">Crie e gerencie os planos de assinatura da plataforma.</p>
-          </div>
-        </div>
-        <div className="rounded-md border border-destructive bg-destructive/10 p-4">
-          <div className="text-destructive font-medium">Erro ao carregar planos</div>
-          <div className="text-sm text-muted-foreground mt-1">
-            {error.message || 'Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.'}
-          </div>
-          <Button 
-            onClick={() => window.location.reload()} 
-            variant="outline" 
-            size="sm" 
-            className="mt-2"
-          >
-            Tentar Novamente
-          </Button>
-        </div>
-      </div>
-    );
+    return <div className="text-destructive">Erro ao carregar planos: {error.message}</div>;
   }
 
   return (
@@ -510,10 +301,7 @@ export default function AdminPlans() {
 
       <PlanFormDialog
         isOpen={isFormDialogOpen}
-        onClose={() => {
-          setIsFormDialogOpen(false);
-          fetchPlans(); // Recarregar planos após fechar o dialog
-        }}
+        onClose={() => setIsFormDialogOpen(false)}
         plan={selectedPlan}
       />
 
