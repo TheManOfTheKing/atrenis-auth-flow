@@ -148,7 +148,7 @@ export function useTogglePlanStatus() {
           .from('profiles')
           .select('id', { count: 'exact', head: true })
           .eq('plan_id', id)
-          .eq('status_assinatura', 'ativa');
+          .eq('status_assinatura', 'active');
 
         if (countError) throw countError;
 

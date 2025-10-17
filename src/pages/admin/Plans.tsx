@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Edit, Power, Trash2, CheckCircle2, XCircle, Copy, Users, ArrowUp, ArrowDown } from "lucide-react";
+import { PlusCircle, Edit, Power, Trash2, CheckCircle2, XCircle, Copy, Users, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   usePlans,

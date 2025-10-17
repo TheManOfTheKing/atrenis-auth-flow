@@ -146,11 +146,7 @@ export const planSchema = z.object({
     errorMap: () => ({ message: "Selecione um tipo de plano" }),
   }),
   preco_mensal: z.coerce.number()
-    .min(0, 'Preço mensal não pode ser negativo')
-    .refine((val) => val > 0, {
-      message: 'Preço mensal deve ser maior que zero para planos públicos',
-      path: ['preco_mensal'],
-    }),
+    .min(0, 'Preço mensal não pode ser negativo'),
   preco_anual: z.coerce.number()
     .min(0, 'Preço anual não pode ser negativo')
     .optional()
@@ -172,6 +168,15 @@ export const planSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Preço mensal deve ser 0 para planos vitalícios.",
+      path: ["preco_mensal"],
+    });
+  }
+  
+  // Validação de preço mensal para planos públicos
+  if (data.tipo === 'publico' && data.preco_mensal <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Preço mensal deve ser maior que 0 para planos públicos.",
       path: ["preco_mensal"],
     });
   }
