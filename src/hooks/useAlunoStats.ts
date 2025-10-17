@@ -21,6 +21,6 @@ export function useAlunoStats() {
       // A função RPC retorna um array, pegamos o primeiro elemento
       return data[0];
     },
-    enabled: !!supabase.auth.getUser(), // Habilita a query apenas se houver um usuário autenticado
+    enabled: true, // Habilita a query
   });
 }

@@ -91,31 +91,32 @@ export default function Signup() {
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            nome: data.nome,
-            role: 'personal', // Hardcoded para 'personal'
-            cref: data.cref || null,
-            telefone: data.telefone || null,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
+      // Usar a Edge Function para criar personal trainer
+      const { data: result, error } = await supabase.functions.invoke('signup-personal', {
+        body: {
+          email: data.email,
+          password: data.password,
+          nome: data.nome,
+          cref: data.cref || null,
+          telefone: data.telefone || null,
+        }
       });
 
       if (error) throw error;
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       setNewAccountEmail(data.email);
       setShowSuccessAlert(true);
       form.reset(); // Limpa o formulário
     } catch (error: any) {
       let errorMessage = "Ocorreu um erro inesperado. Tente novamente.";
-      if (error.message.includes("User already registered")) {
+      if (error.message.includes("already") || error.message.includes("já cadastrado")) {
         errorMessage = "Este email já está cadastrado. Por favor, faça login ou use outro email.";
       } else if (error.message.includes("Password should be at least 6 characters")) {
-        errorMessage = "A senha deve ter no mínimo 6 caracteres."; // Zod já trata isso, mas como fallback
+        errorMessage = "A senha deve ter no mínimo 6 caracteres.";
       } else {
         errorMessage = error.message;
       }

@@ -230,7 +230,7 @@ export default function PersonalDetailsPage() {
                 </Badge>
                 <Badge
                   className={`
-                    ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                    ${personal.status_assinatura === 'active' && 'bg-secondary-green text-white'}
                     ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                     ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                     ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}

@@ -277,7 +277,7 @@ export default function AdminStatistics() {
                       <TableCell>
                         <Badge
                           className={`
-                            ${sub.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                            ${sub.status_assinatura === 'active' && 'bg-secondary-green text-white'}
                             ${sub.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                             ${sub.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                             ${sub.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
@@ -325,7 +325,7 @@ export default function AdminStatistics() {
                       <TableCell>
                         <Badge
                           className={`
-                            ${sub.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                            ${sub.status_assinatura === 'active' && 'bg-secondary-green text-white'}
                             ${sub.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                             ${sub.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                             ${sub.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}

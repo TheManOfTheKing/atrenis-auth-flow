@@ -252,7 +252,7 @@ export default function PersonalTrainers() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="ativa">Ativa</SelectItem>
+            <SelectItem value="active">Ativa</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
             <SelectItem value="vencida">Vencida</SelectItem>
             <SelectItem value="trial">Trial</SelectItem>
@@ -350,7 +350,7 @@ export default function PersonalTrainers() {
                           </Badge>
                           <Badge
                             className={`
-                              ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                              ${personal.status_assinatura === 'active' && 'bg-secondary-green text-white'}
                               ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                               ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                               ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}

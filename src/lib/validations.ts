@@ -146,11 +146,7 @@ export const planSchema = z.object({
     errorMap: () => ({ message: "Selecione um tipo de plano" }),
   }),
   preco_mensal: z.coerce.number()
-    .min(0, 'Preço mensal não pode ser negativo')
-    .refine((val) => val > 0, {
-      message: 'Preço mensal deve ser maior que zero para planos públicos',
-      path: ['preco_mensal'],
-    }),
+    .min(0, 'Preço mensal não pode ser negativo'),
   preco_anual: z.coerce.number()
     .min(0, 'Preço anual não pode ser negativo')
     .optional()
@@ -167,6 +163,14 @@ export const planSchema = z.object({
     .min(0, 'Ordem de exibição não pode ser negativa')
     .default(0),
 }).superRefine((data, ctx) => {
+  // Validação de preço mensal para planos públicos
+  if (data.tipo === 'publico' && data.preco_mensal <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Preço mensal deve ser maior que zero para planos públicos.",
+      path: ["preco_mensal"],
+    });
+  }
   // Validação de preço mensal para planos vitalícios
   if (data.tipo === 'vitalicio' && data.preco_mensal !== 0) {
     ctx.addIssue({
@@ -255,3 +259,42 @@ export const personalAdminSchema = z.object({
     });
   }
 });
+
+// Schema para exercício dentro de um treino
+export const workoutExerciseSchema = z.object({
+  exercicio_id: z.string().uuid('ID do exercício inválido'),
+  ordem: z.number().int().positive('Ordem deve ser um número positivo'),
+  series: z.string().min(1, 'Séries são obrigatórias'),
+  repeticoes: z.string().min(1, 'Repetições são obrigatórias'),
+  carga: z.string().optional().default(''),
+  descanso_seg: z.number().int().min(0).default(60),
+  observacoes: z.string().optional().default('')
+});
+
+// Schema completo para treino (incluindo exercícios)
+export const workoutFormSchema = z.object({
+  // Etapa 1 - Informações básicas
+  nome: z.string()
+    .min(3, 'Nome deve ter no mínimo 3 caracteres')
+    .max(100, 'Nome muito longo'),
+  descricao: z.string()
+    .max(500, 'Descrição muito longa')
+    .optional()
+    .or(z.literal('')),
+  tipo: z.string()
+    .min(1, 'Selecione um tipo de treino')
+    .default('personalizado'),
+  duracao_estimada_min: z.coerce.number()
+    .int('Duração deve ser um número inteiro')
+    .positive('Duração deve ser positiva')
+    .min(5, 'Duração mínima de 5 minutos')
+    .max(180, 'Duração máxima de 180 minutos')
+    .optional(),
+  
+  // Etapa 2 - Exercícios
+  exercicios: z.array(workoutExerciseSchema).min(1, 'Adicione pelo menos 1 exercício ao treino')
+});
+
+// Tipos inferidos dos schemas
+export type WorkoutFormData = z.infer<typeof workoutFormSchema>;
+export type WorkoutExerciseData = z.infer<typeof workoutExerciseSchema>;
