@@ -230,7 +230,7 @@ export default function AdminPlans() {
                         ${plan.tipo === 'vitalicio' && 'bg-primary-yellow text-primary-dark'}
                       `}
                     >
-                      {plan.tipo?.charAt(0).toUpperCase() + plan.tipo?.slice(1) || 'N/A'}
+                      {plan.tipo === 'vitalicio' ? 'Vitalício' : plan.tipo === 'publico' ? 'Público' : plan.tipo?.charAt(0).toUpperCase() + plan.tipo?.slice(1) || 'N/A'}
                     </Badge>
                   </TableCell>
                   <TableCell>R$ {plan.preco_mensal.toFixed(2)}</TableCell>

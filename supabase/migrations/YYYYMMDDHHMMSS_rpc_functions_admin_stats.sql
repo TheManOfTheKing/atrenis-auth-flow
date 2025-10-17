@@ -17,18 +17,18 @@ BEGIN
         (SELECT COUNT(*) FROM public.profiles WHERE role = 'aluno') AS total_alunos,
         COALESCE(SUM(
             CASE
-                WHEN p.status_assinatura = 'ativa' AND pl.preco_mensal IS NOT NULL THEN
+                WHEN p.status_assinatura = 'ativo' AND pl.preco_mensal IS NOT NULL THEN
                     pl.preco_mensal * (1 - COALESCE(p.desconto_percentual, 0) / 100)
-                WHEN p.status_assinatura = 'ativa' AND pl.preco_anual IS NOT NULL THEN
+                WHEN p.status_assinatura = 'ativo' AND pl.preco_anual IS NOT NULL THEN
                     (pl.preco_anual / 12) * (1 - COALESCE(p.desconto_percentual, 0) / 100)
                 ELSE 0
             END
         ), 0) AS mrr,
         COALESCE(SUM(
             CASE
-                WHEN p.status_assinatura = 'ativa' AND pl.preco_mensal IS NOT NULL THEN
+                WHEN p.status_assinatura = 'ativo' AND pl.preco_mensal IS NOT NULL THEN
                     pl.preco_mensal * 12 * (1 - COALESCE(p.desconto_percentual, 0) / 100)
-                WHEN p.status_assinatura = 'ativa' AND pl.preco_anual IS NOT NULL THEN
+                WHEN p.status_assinatura = 'ativo' AND pl.preco_anual IS NOT NULL THEN
                     pl.preco_anual * (1 - COALESCE(p.desconto_percentual, 0) / 100)
                 ELSE 0
             END
@@ -189,7 +189,7 @@ BEGIN
         public.plans pl ON p.plan_id = pl.id
     WHERE
         p.role = 'personal'
-        AND p.status_assinatura = 'ativa'
+        AND p.status_assinatura = 'ativo'
         AND p.data_vencimento IS NOT NULL
         AND p.data_vencimento BETWEEN NOW() AND NOW() + (days_ahead || ' days')::INTERVAL
     ORDER BY
@@ -220,6 +220,6 @@ BEGIN
         public.profiles p
     WHERE
         p.role = 'personal'
-        AND (p.plan_id IS NULL OR p.status_assinatura != 'ativa');
+        AND (p.plan_id IS NULL OR p.status_assinatura != 'ativo');
 END;
 $$;

@@ -68,7 +68,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
 
   useEffect(() => {
     if (personal) {
-      const defaultPeriod = personal.plano_vitalicio ? 'vitalicio' : (personal.status_assinatura === 'ativa' && personal.data_assinatura && personal.data_vencimento && (new Date(personal.data_vencimento).getMonth() !== new Date(personal.data_assinatura).getMonth() + 1)) ? 'anual' : 'mensal';
+      const defaultPeriod = personal.plano_vitalicio ? 'vitalicio' : (personal.status_assinatura === 'ativo' && personal.data_assinatura && personal.data_vencimento && (new Date(personal.data_vencimento).getMonth() !== new Date(personal.data_assinatura).getMonth() + 1)) ? 'anual' : 'mensal';
       form.reset({
         personalId: personal.id,
         planId: personal.plan_id || "",
@@ -153,7 +153,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
 
   if (!personal) return null;
 
-  const hasActivePlan = personal.plan_id && personal.status_assinatura && ['ativa', 'trial', 'vitalicia'].includes(personal.status_assinatura);
+  const hasActivePlan = personal.plan_id && personal.status_assinatura && ['ativo', 'trial', 'vitalicio'].includes(personal.status_assinatura);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -185,15 +185,17 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
                   {personal.status_assinatura && personal.status_assinatura !== 'pendente' && (
                     <Badge
                       className={`
-                        ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                        ${personal.status_assinatura === 'ativo' && 'bg-secondary-green text-white'}
                         ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                         ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                         ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                         ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
-                        ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
+                        ${personal.status_assinatura === 'vitalicio' && 'bg-purple-600 text-white'}
                       `}
                     >
-                      {personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
+                      {personal.status_assinatura === 'ativo' ? 'Ativo' : 
+                       personal.status_assinatura === 'vitalicio' ? 'Vitalício' :
+                       personal.status_assinatura.charAt(0).toUpperCase() + personal.status_assinatura.slice(1)}
                     </Badge>
                   )}
                 </div>
@@ -253,7 +255,7 @@ export default function AssignPlanToPersonalDialog({ isOpen, onClose, personal }
                       <p className="flex items-center gap-1"><DollarSign className="h-4 w-4" /> Mensal: R$ {selectedPlan.preco_mensal.toFixed(2)}</p>
                       <p className="flex items-center gap-1"><DollarSign className="h-4 w-4" /> Anual: {selectedPlan.preco_anual ? `R$ ${selectedPlan.preco_anual.toFixed(2)}` : 'N/A'}</p>
                       <p className="flex items-center gap-1"><Users className="h-4 w-4" /> Alunos: {selectedPlan.max_alunos === 0 ? 'Ilimitado' : selectedPlan.max_alunos}</p>
-                      <p className="flex items-center gap-1"><Info className="h-4 w-4" /> Tipo: {selectedPlan.tipo?.charAt(0).toUpperCase() + selectedPlan.tipo?.slice(1)}</p>
+                      <p className="flex items-center gap-1"><Info className="h-4 w-4" /> Tipo: {selectedPlan.tipo === 'vitalicio' ? 'Vitalício' : selectedPlan.tipo === 'publico' ? 'Público' : selectedPlan.tipo?.charAt(0).toUpperCase() + selectedPlan.tipo?.slice(1)}</p>
                     </div>
                     {selectedPlan.recursos && (selectedPlan.recursos as string[]).length > 0 && (
                       <div className="mt-3">

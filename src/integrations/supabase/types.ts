@@ -862,12 +862,12 @@ export type Database = {
       comentario_tipo: "feedback" | "duvida" | "orientacao"
       plan_type: "publico" | "vitalicio"
       subscription_status:
-        | "ativa"
+        | "ativo"
         | "cancelada"
         | "vencida"
         | "trial"
         | "pendente"
-        | "vitalicia"
+        | "vitalicio"
       user_role: "admin" | "personal" | "aluno"
     }
     CompositeTypes: {
@@ -1002,12 +1002,12 @@ export const Constants = {
       comentario_tipo: ["feedback", "duvida", "orientacao"],
       plan_type: ["publico", "vitalicio"],
       subscription_status: [
-        "ativa",
+        "ativo",
         "cancelada",
         "vencida",
         "trial",
         "pendente",
-        "vitalicia",
+        "vitalicio",
       ],
       user_role: ["admin", "personal", "aluno"],
     },

@@ -277,14 +277,16 @@ export default function AdminStatistics() {
                       <TableCell>
                         <Badge
                           className={`
-                            ${sub.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                            ${sub.status_assinatura === 'ativo' && 'bg-secondary-green text-white'}
                             ${sub.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                             ${sub.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                             ${sub.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                             ${sub.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
                           `}
                         >
-                          {sub.status_assinatura.charAt(0).toUpperCase() + sub.status_assinatura.slice(1)}
+                          {sub.status_assinatura === 'ativo' ? 'Ativo' : 
+                           sub.status_assinatura === 'vitalicio' ? 'Vitalício' :
+                           sub.status_assinatura.charAt(0).toUpperCase() + sub.status_assinatura.slice(1)}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -325,14 +327,16 @@ export default function AdminStatistics() {
                       <TableCell>
                         <Badge
                           className={`
-                            ${sub.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                            ${sub.status_assinatura === 'ativo' && 'bg-secondary-green text-white'}
                             ${sub.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                             ${sub.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                             ${sub.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                             ${sub.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
                           `}
                         >
-                          {sub.status_assinatura.charAt(0).toUpperCase() + sub.status_assinatura.slice(1)}
+                          {sub.status_assinatura === 'ativo' ? 'Ativo' : 
+                           sub.status_assinatura === 'vitalicio' ? 'Vitalício' :
+                           sub.status_assinatura.charAt(0).toUpperCase() + sub.status_assinatura.slice(1)}
                         </Badge>
                       </TableCell>
                     </TableRow>

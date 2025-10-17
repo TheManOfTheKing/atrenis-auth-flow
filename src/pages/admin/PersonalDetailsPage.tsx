@@ -222,23 +222,17 @@ export default function PersonalDetailsPage() {
               <div className="flex items-center gap-1 mt-1">
                 <Badge
                   className={`
-                    ${currentPlanType === 'publico' && 'bg-secondary-blue text-white'}
-                    ${currentPlanType === 'vitalicio' && 'bg-primary-yellow text-primary-dark'}
-                  `}
-                >
-                  {currentPlanType?.charAt(0).toUpperCase() + currentPlanType?.slice(1) || 'N/A'}
-                </Badge>
-                <Badge
-                  className={`
-                    ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                    ${personal.status_assinatura === 'ativo' && 'bg-secondary-green text-white'}
                     ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                     ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                     ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                     ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
-                    ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
+                    ${personal.status_assinatura === 'vitalicio' && 'bg-purple-600 text-white'}
                   `}
                 >
-                  {personal.status_assinatura?.charAt(0).toUpperCase() + personal.status_assinatura?.slice(1) || 'N/A'}
+                  {personal.status_assinatura === 'ativo' ? 'Ativo' : 
+                   personal.status_assinatura === 'vitalicio' ? 'Vitalício' :
+                   personal.status_assinatura?.charAt(0).toUpperCase() + personal.status_assinatura?.slice(1) || 'N/A'}
                 </Badge>
               </div>
             )}

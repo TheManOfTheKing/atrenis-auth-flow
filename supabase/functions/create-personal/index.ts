@@ -104,7 +104,7 @@ serve(async (req) => {
         dataAssinatura = new Date().toISOString();
         if (planData.tipo === 'vitalicio' || periodo === 'vitalicio') {
           planoVitalicio = true;
-          statusAssinatura = 'vitalicia';
+          statusAssinatura = 'vitalicio';
           dataVencimento = null; // Vitalício não tem data de vencimento
         } else if (periodo === 'mensal') {
           const nextMonth = new Date();

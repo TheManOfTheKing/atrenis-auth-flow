@@ -48,14 +48,14 @@ BEGIN
     -- Calculate data_vencimento and status_assinatura based on plan type and period
     IF v_plan_data.tipo = 'vitalicio' THEN
         v_plano_vitalicio := TRUE;
-        v_status_assinatura := 'vitalicia';
+        v_status_assinatura := 'vitalicio';
         v_data_vencimento := NULL; -- Planos vitalícios não vencem
     ELSIF p_periodo = 'mensal' THEN
         v_data_vencimento := v_data_assinatura + INTERVAL '1 month';
-        v_status_assinatura := 'ativa';
+        v_status_assinatura := 'ativo';
     ELSIF p_periodo = 'anual' THEN
         v_data_vencimento := v_data_assinatura + INTERVAL '1 year';
-        v_status_assinatura := 'ativa';
+        v_status_assinatura := 'ativo';
     ELSE
         RETURN json_build_object('success', FALSE, 'error', 'Período de assinatura inválido. Use "mensal" ou "anual".');
     END IF;

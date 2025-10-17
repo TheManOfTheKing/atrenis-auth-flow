@@ -231,12 +231,12 @@ export default function PersonalTrainers() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="ativa">Ativa</SelectItem>
+            <SelectItem value="ativo">Ativo</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
             <SelectItem value="vencida">Vencida</SelectItem>
             <SelectItem value="trial">Trial</SelectItem>
             <SelectItem value="pendente">Pendente</SelectItem>
-            <SelectItem value="vitalicia">Vitalícia</SelectItem>
+            <SelectItem value="vitalicio">Vitalício</SelectItem>
           </SelectContent>
         </Select>
         <Select onValueChange={setSortBy} value={sortBy}>
@@ -325,19 +325,23 @@ export default function PersonalTrainers() {
                               ${allPlans?.find(p => p.id === personal.plan_id)?.tipo === 'vitalicio' && 'bg-primary-yellow text-primary-dark'}
                             `}
                           >
-                            {allPlans?.find(p => p.id === personal.plan_id)?.tipo?.charAt(0).toUpperCase() + allPlans?.find(p => p.id === personal.plan_id)?.tipo?.slice(1) || 'N/A'}
+                            {allPlans?.find(p => p.id === personal.plan_id)?.tipo === 'vitalicio' ? 'Vitalício' : 
+                             allPlans?.find(p => p.id === personal.plan_id)?.tipo === 'publico' ? 'Público' :
+                             allPlans?.find(p => p.id === personal.plan_id)?.tipo?.charAt(0).toUpperCase() + allPlans?.find(p => p.id === personal.plan_id)?.tipo?.slice(1) || 'N/A'}
                           </Badge>
                           <Badge
                             className={`
-                              ${personal.status_assinatura === 'ativa' && 'bg-secondary-green text-white'}
+                              ${personal.status_assinatura === 'ativo' && 'bg-secondary-green text-white'}
                               ${personal.status_assinatura === 'vencida' && 'bg-secondary-red text-white'}
                               ${personal.status_assinatura === 'trial' && 'bg-secondary-blue text-white'}
                               ${personal.status_assinatura === 'cancelada' && 'bg-gray-400 text-white'}
                               ${personal.status_assinatura === 'pendente' && 'bg-gray-600 text-white'}
-                              ${personal.status_assinatura === 'vitalicia' && 'bg-purple-600 text-white'}
+                              ${personal.status_assinatura === 'vitalicio' && 'bg-purple-600 text-white'}
                             `}
                           >
-                            {personal.status_assinatura?.charAt(0).toUpperCase() + personal.status_assinatura?.slice(1) || 'N/A'}
+                            {personal.status_assinatura === 'ativo' ? 'Ativo' : 
+                             personal.status_assinatura === 'vitalicio' ? 'Vitalício' :
+                             personal.status_assinatura?.charAt(0).toUpperCase() + personal.status_assinatura?.slice(1) || 'N/A'}
                           </Badge>
                         </div>
                       )}
