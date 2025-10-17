@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { exercicioSchema } from '@/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 interface CreateExerciseDialogProps {
@@ -61,6 +61,7 @@ export function CreateExerciseDialog({
   onSuccess
 }: CreateExerciseDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm({
     resolver: zodResolver(exercicioSchema),

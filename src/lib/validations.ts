@@ -59,7 +59,17 @@ export const exercicioSchema = z.object({
     .or(z.literal('')), // Permite string vazia para opcional
   grupo_muscular: z.string()
     .min(1, 'Selecione um grupo muscular'),
+  equipamento: z.string()
+    .optional()
+    .or(z.literal('')), // Permite string vazia para opcional
+  dificuldade: z.string()
+    .optional()
+    .or(z.literal('')), // Permite string vazia para opcional
   video_url: z.string()
+    .url('URL inválida')
+    .optional()
+    .or(z.literal('')), // Permite string vazia para opcional
+  imagem_url: z.string()
     .url('URL inválida')
     .optional()
     .or(z.literal('')), // Permite string vazia para opcional
