@@ -12,6 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Eye, Download, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { AlunoDetailsDialog } from "@/components/admin/alunos/AlunoDetailsDialog";
+import { exportAlunosToCSV } from "@/utils/exportCSV";
 
 type AlunoWithDetails = Tables<'profiles'> & {
   personal_nome: string;
@@ -28,6 +30,10 @@ export default function Alunos() {
   const [sortOrder, setSortOrder] = useState("nome_asc"); // 'nome_asc', 'nome_desc', 'recentes', 'antigos'
   const [currentPage, setCurrentPage] = useState(1);
   const [adminId, setAdminId] = useState<string | null>(null); // To ensure only admin can access
+
+  // Estados para o dialog de detalhes
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedAluno, setSelectedAluno] = useState<AlunoWithDetails | null>(null);
 
   // Debounce search term
   useEffect(() => {
@@ -131,13 +137,9 @@ export default function Alunos() {
       .slice(0, 2);
   };
 
-  const handleViewDetails = (id: string) => {
-    // Implement navigation to student detail page
-    console.log("Ver detalhes do Aluno:", id);
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: `Detalhes para o Aluno ${id} serão implementados em breve.`,
-    });
+  const handleViewDetails = (aluno: AlunoWithDetails) => {
+    setSelectedAluno(aluno);
+    setIsDetailsDialogOpen(true);
   };
 
   const handleExportCSV = () => {
@@ -150,27 +152,8 @@ export default function Alunos() {
       return;
     }
 
-    const headers = ['Nome', 'Email', 'Personal Trainer', 'Treinos Ativos', 'Status Assinatura', 'Data de Cadastro'];
-    const rows = alunos.map(aluno => [
-      aluno.nome,
-      aluno.email,
-      aluno.personal_nome || '-',
-      aluno.treinos_count || 0,
-      aluno.subscription_status || '-',
-      new Date(aluno.created_at).toLocaleDateString('pt-BR')
-    ]);
-
-    let csvContent = headers.join(',') + '\n';
-    rows.forEach(row => {
-      csvContent += row.map(field => `"${field}"`).join(',') + '\n';
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `atrenis_alunos_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-
+    exportAlunosToCSV(alunos);
+    
     toast({
       title: "Exportação concluída!",
       description: "Dados dos alunos exportados com sucesso para CSV.",
@@ -291,7 +274,7 @@ export default function Alunos() {
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => handleViewDetails(aluno.id)}
+                      onClick={() => handleViewDetails(aluno)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -303,6 +286,18 @@ export default function Alunos() {
         </div>
       ) : (
         <p className="text-muted-foreground text-center">Nenhum aluno encontrado.</p>
+      )}
+      <p className="text-sm text-muted-foreground text-center mt-4">
+        Total de alunos: {totalAlunos}
+      </p>
+
+      {/* Dialog de Detalhes */}
+      {selectedAluno && (
+        <AlunoDetailsDialog
+          open={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+          aluno={selectedAluno}
+        />
       )}
     </div>
   );

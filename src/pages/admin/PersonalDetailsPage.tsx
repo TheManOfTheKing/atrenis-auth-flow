@@ -20,7 +20,7 @@ import { usePersonalStudents } from "@/hooks/usePersonalStudents"; // Reutilizan
 import AssignPlanToPersonalDialog from "@/components/admin/AssignPlanToPersonalDialog";
 import PersonalFormDialog from "@/components/admin/PersonalFormDialog";
 import PersonalStatusDialogAdmin from "@/components/admin/PersonalStatusDialogAdmin";
-import { useDeletePersonalByAdmin } from "@/hooks/usePersonalAdminCrud";
+import { usePersonalAdminCrud } from "@/hooks/admin/usePersonalAdminCrud";
 import { usePlans } from "@/hooks/usePlans"; // Para obter detalhes do plano
 
 export default function PersonalDetailsPage() {
@@ -53,7 +53,7 @@ export default function PersonalDetailsPage() {
   // const { data: stats, isLoading: isLoadingStats, error: statsError } = usePersonalStats(); 
   const { alunos, isLoading: isLoadingStudents, error: studentsError } = usePersonalStudents(personalId);
 
-  const deletePersonalMutation = useDeletePersonalByAdmin();
+  const { deletePersonal } = usePersonalAdminCrud();
 
   const getInitials = (name: string) => {
     return name
@@ -81,7 +81,7 @@ export default function PersonalDetailsPage() {
   const handleDelete = () => {
     if (!personal) return;
     if (window.confirm(`Tem certeza que deseja deletar o personal trainer ${personal.nome}? Esta ação é irreversível e só é possível se ele não tiver alunos ativos.`)) {
-      deletePersonalMutation.mutate(personal.id, {
+      deletePersonal.mutate(personal.id, {
         onSuccess: () => {
           navigate("/admin/personal-trainers");
         },
@@ -156,11 +156,11 @@ export default function PersonalDetailsPage() {
             variant={personal.ativo ? 'destructive' : 'default'}
             size="sm"
             onClick={handleToggleStatus}
-            disabled={deletePersonalMutation.isPending}
+            disabled={deletePersonal.isPending}
           >
             <Power className="h-4 w-4 mr-1" /> {personal.ativo ? 'Desativar' : 'Ativar'}
           </Button>
-          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deletePersonalMutation.isPending}>
+          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deletePersonal.isPending}>
             <Trash2 className="h-4 w-4 mr-1" /> Deletar
           </Button>
         </div>

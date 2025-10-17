@@ -27,11 +27,15 @@ import {
 // Novos hooks e componentes
 import { useAdminPersonalTrainers, PersonalTrainerAdminView } from "@/hooks/useAdminPersonalTrainers";
 import { usePlans } from "@/hooks/usePlans"; // Para popular o filtro de planos
-import { useDeletePersonalByAdmin } from "@/hooks/usePersonalAdminCrud";
+import { usePersonalAdminCrud } from "@/hooks/admin/usePersonalAdminCrud";
 import AssignPlanToPersonalDialog from "@/components/admin/AssignPlanToPersonalDialog";
 import AlunosPagination from "@/components/personal/AlunosPagination"; // Reutilizando o componente de paginação
 import PersonalFormDialog from "@/components/admin/PersonalFormDialog";
 import PersonalStatusDialogAdmin from "@/components/admin/PersonalStatusDialogAdmin";
+import { EditPersonalDialog } from "@/components/admin/personal-trainers/EditPersonalDialog";
+import { DeactivatePersonalDialog } from "@/components/admin/personal-trainers/DeactivatePersonalDialog";
+import { DeletePersonalDialog } from "@/components/admin/personal-trainers/DeletePersonalDialog";
+import { exportPersonalTrainersToCSV } from "@/utils/exportCSV";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -53,6 +57,12 @@ export default function PersonalTrainers() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedPersonalForStatus, setSelectedPersonalForStatus] = useState<PersonalTrainerAdminView | null>(null);
   const [statusActionType, setStatusActionType] = useState<'deactivate' | 'reactivate'>('deactivate');
+
+  // Novos estados para os dialogs
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedPersonal, setSelectedPersonal] = useState<PersonalTrainerAdminView | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -76,7 +86,7 @@ export default function PersonalTrainers() {
   });
 
   const { data: allPlans, isLoading: isLoadingAllPlans } = usePlans({ ativo: null }); // Fetch all plans for filter
-  const deletePersonalMutation = useDeletePersonalByAdmin();
+  const { deletePersonal } = usePersonalAdminCrud();
 
   const getInitials = (name: string) => {
     return name
@@ -97,8 +107,8 @@ export default function PersonalTrainers() {
   };
 
   const handleEditPersonal = (personal: PersonalTrainerAdminView) => {
-    setSelectedPersonalForEdit(personal);
-    setIsFormDialogOpen(true);
+    setSelectedPersonal(personal);
+    setIsEditDialogOpen(true);
   };
 
   const handleAssignPlan = (personal: PersonalTrainerAdminView) => {
@@ -107,15 +117,13 @@ export default function PersonalTrainers() {
   };
 
   const handleToggleStatus = (personal: PersonalTrainerAdminView) => {
-    setSelectedPersonalForStatus(personal);
-    setStatusActionType(personal.ativo ? 'deactivate' : 'reactivate');
-    setIsStatusDialogOpen(true);
+    setSelectedPersonal(personal);
+    setIsDeactivateDialogOpen(true);
   };
 
   const handleDeletePersonal = (personal: PersonalTrainerAdminView) => {
-    if (window.confirm(`Tem certeza que deseja deletar o personal trainer ${personal.nome}? Esta ação é irreversível e só é possível se ele não tiver alunos ativos.`)) {
-      deletePersonalMutation.mutate(personal.id);
-    }
+    setSelectedPersonal(personal);
+    setIsDeleteDialogOpen(true);
   };
 
   const formatCurrency = (value: number) => {
@@ -160,37 +168,8 @@ export default function PersonalTrainers() {
       return;
     }
 
-    const headers = [
-      'Nome', 'Email', 'CREF', 'Plano Atual', 'Tipo Plano', 'Status Assinatura', 'Desconto (%)',
-      'Valor Mensal/Anual', 'Data Assinatura', 'Data Vencimento', 'Alunos Ativos', 'Limite Alunos', 'Data de Cadastro'
-    ];
-    const rows = personalTrainers.map(personal => [
-      personal.nome,
-      personal.email,
-      personal.cref || '-',
-      personal.plan_nome || 'Nenhum',
-      allPlans?.find(p => p.id === personal.plan_id)?.tipo || '-',
-      personal.status_assinatura || 'Pendente',
-      personal.desconto_percentual || 0,
-      formatCurrency(calculateCurrentPlanValue(personal)),
-      personal.data_assinatura ? format(new Date(personal.data_assinatura), "dd/MM/yyyy", { locale: ptBR }) : '-',
-      personal.plano_vitalicio ? 'Vitalício' : (personal.data_vencimento ? format(new Date(personal.data_vencimento), "dd/MM/yyyy", { locale: ptBR }) : '-'),
-      personal.total_alunos || 0,
-      personal.plan_max_alunos === 0 ? 'Ilimitado' : personal.plan_max_alunos || '-',
-      format(new Date(personal.created_at), "dd/MM/yyyy", { locale: ptBR })
-    ]);
-
-    let csvContent = headers.join(',') + '\n';
-    rows.forEach(row => {
-      csvContent += row.map(field => `"${field}"`).join(',') + '\n'; // Wrap fields in quotes to handle commas
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `atrenis_personal_trainers_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-
+    exportPersonalTrainersToCSV(personalTrainers);
+    
     toast({
       title: "Exportação concluída!",
       description: "Dados dos personal trainers exportados com sucesso para CSV.",
@@ -405,7 +384,7 @@ export default function PersonalTrainers() {
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => handleDeletePersonal(personal)}
-                          disabled={deletePersonalMutation.isPending}
+                          disabled={deletePersonal.isPending}
                         >
                           <Trash2 className="mr-2 h-4 w-4" /> Deletar Personal
                         </DropdownMenuItem>
@@ -451,6 +430,29 @@ export default function PersonalTrainers() {
           personal={selectedPersonalForStatus}
           actionType={statusActionType}
         />
+      )}
+
+      {/* Novos dialogs */}
+      {selectedPersonal && (
+        <>
+          <EditPersonalDialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            personal={selectedPersonal}
+          />
+          
+          <DeactivatePersonalDialog
+            open={isDeactivateDialogOpen}
+            onOpenChange={setIsDeactivateDialogOpen}
+            personal={selectedPersonal}
+          />
+          
+          <DeletePersonalDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            personal={selectedPersonal}
+          />
+        </>
       )}
     </div>
   );
