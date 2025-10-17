@@ -66,7 +66,7 @@ export default function NovoExercicio() {
           descricao: data.descricao || null,
           grupo_muscular: data.grupo_muscular,
           video_url: data.video_url || null,
-          criado_por_personal_id: personalId, // Marca como customizado pelo personal
+          personal_id: personalId, // Marca como customizado pelo personal
         })
         .select()
         .single();

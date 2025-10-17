@@ -50,9 +50,9 @@ export default function Exercicios() {
         .select("*");
 
       if (apenasMeusExercicios) {
-        query = query.eq("criado_por_personal_id", personalId);
+        query = query.eq("personal_id", personalId);
       } else {
-        query = query.or(`criado_por_personal_id.is.null,criado_por_personal_id.eq.${personalId}`);
+        query = query.or(`personal_id.is.null,personal_id.eq.${personalId}`);
       }
 
       if (searchTerm) {
@@ -86,7 +86,7 @@ export default function Exercicios() {
         .from("exercicios")
         .delete()
         .eq("id", id)
-        .eq("criado_por_personal_id", personalId); // Garante que só pode excluir os próprios
+        .eq("personal_id", personalId); // Garante que só pode excluir os próprios
 
       if (error) throw error;
 
@@ -181,7 +181,7 @@ export default function Exercicios() {
                 <CardTitle className="text-lg">{exercicio.nome}</CardTitle>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {exercicio.grupo_muscular && <Badge variant="secondary">{exercicio.grupo_muscular}</Badge>}
-                  {exercicio.criado_por_personal_id && <Badge className="bg-secondary-blue text-white">Customizado</Badge>}
+                  {exercicio.personal_id && <Badge className="bg-secondary-blue text-white">Customizado</Badge>}
                 </div>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -193,7 +193,7 @@ export default function Exercicios() {
                 )}
               </CardContent>
               <CardFooter className="flex gap-2">
-                {exercicio.criado_por_personal_id === personalId && (
+                {exercicio.personal_id === personalId && (
                   <>
                     <Button size="sm" variant="outline" onClick={() => handleEdit(exercicio.id)}>
                       <Edit className="h-4 w-4" />

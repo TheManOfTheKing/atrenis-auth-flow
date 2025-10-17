@@ -223,38 +223,50 @@ export type Database = {
       exercicios: {
         Row: {
           created_at: string
-          criado_por_personal_id: string | null
+          personal_id: string | null
           descricao: string | null
           grupo_muscular: string | null
           id: string
           nome: string
           updated_at: string
           video_url: string | null
+          equipamento: string | null
+          dificuldade: string | null
+          imagem_url: string | null
+          publico: boolean
         }
         Insert: {
           created_at?: string
-          criado_por_personal_id?: string | null
+          personal_id?: string | null
           descricao?: string | null
           grupo_muscular?: string | null
           id?: string
           nome: string
           updated_at?: string
           video_url?: string | null
+          equipamento?: string | null
+          dificuldade?: string | null
+          imagem_url?: string | null
+          publico?: boolean
         }
         Update: {
           created_at?: string
-          criado_por_personal_id?: string | null
+          personal_id?: string | null
           descricao?: string | null
           grupo_muscular?: string | null
           id?: string
           nome?: string
           updated_at?: string
           video_url?: string | null
+          equipamento?: string | null
+          dificuldade?: string | null
+          imagem_url?: string | null
+          publico?: boolean
         }
         Relationships: [
           {
-            foreignKeyName: "exercicios_criado_por_personal_id_fkey"
-            columns: ["criado_por_personal_id"]
+            foreignKeyName: "exercicios_personal_id_fkey"
+            columns: ["personal_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -827,13 +839,17 @@ export type Database = {
         Args: { grupo?: string; search_term?: string }
         Returns: {
           created_at: string
-          criado_por_personal_id: string | null
+          personal_id: string | null
           descricao: string | null
           grupo_muscular: string | null
           id: string
           nome: string
           updated_at: string
           video_url: string | null
+          equipamento: string | null
+          dificuldade: string | null
+          imagem_url: string | null
+          publico: boolean
         }[]
       }
       toggle_aluno_status: {
