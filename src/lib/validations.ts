@@ -66,12 +66,16 @@ export const exercicioSchema = z.object({
     .optional()
     .or(z.literal('')), // Permite string vazia para opcional
   video_url: z.string()
-    .url('URL inválida')
     .optional()
+    .refine((val) => !val || z.string().url().safeParse(val).success, {
+      message: 'URL inválida'
+    })
     .or(z.literal('')), // Permite string vazia para opcional
   imagem_url: z.string()
-    .url('URL inválida')
     .optional()
+    .refine((val) => !val || z.string().url().safeParse(val).success, {
+      message: 'URL inválida'
+    })
     .or(z.literal('')), // Permite string vazia para opcional
 });
 
